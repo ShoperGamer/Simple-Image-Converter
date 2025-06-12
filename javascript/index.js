@@ -1,14 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // ตัวแปร DOM
+  // DOM Variables
   const dropZone = document.getElementById('drop-zone');
   const fileList = document.getElementById('file-list');
   const convertBtn = document.getElementById('convert-btn');
   const convertImageBtn = document.getElementById('convert-image-btn');
   const formatSelect = document.getElementById('format-select');
   const resultArea = document.getElementById('result-area');
+  const clearAllBtn = document.getElementById('clear-all-btn'); 
 
-  // ตัวแปรสถานะ
+  // State Variables
   let selectedFiles = [];
+  let draggingItem = null; 
 
   // Event Listeners
   dropZone.addEventListener('click', handleClick);
@@ -17,8 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
   dropZone.addEventListener('drop', handleDrop);
   convertBtn.addEventListener('click', convertToPdf);
   convertImageBtn.addEventListener('click', convertImages);
+  clearAllBtn.addEventListener('click', clearAllFiles); // New: Clear all files
 
-  // ฟังก์ชันจัดการไฟล์
+  // Add drag and drop listeners to the file list itself for reordering
+  fileList.addEventListener('dragstart', handleDragStart);
+  fileList.addEventListener('dragover', handleListDragOver);
+  fileList.addEventListener('drop', handleListDrop);
+  fileList.addEventListener('dragend', handleDragEnd);
+
+  // Function to handle file input click
   function handleClick() {
     const tempInput = document.createElement('input');
     tempInput.type = 'file';
@@ -60,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateFileList();
     convertBtn.disabled = false;
     convertImageBtn.disabled = false;
+    clearAllBtn.disabled = false; // Enable clear all button
   }
 
   function updateFileList() {
@@ -67,35 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedFiles.forEach((file, index) => {
       const li = document.createElement('li');
       li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.setAttribute('draggable', 'true'); // Make list items draggable
+      li.dataset.index = index; // Store original index
 
       const fileName = document.createElement('span');
       fileName.textContent = file.name;
-
-      // ปุ่มเลื่อนขึ้น
-      const btnUp = document.createElement('button');
-      btnUp.className = 'btn btn-sm btn-outline-secondary me-1';
-      btnUp.textContent = '↑';
-      btnUp.disabled = index === 0;
-      btnUp.title = 'เลื่อนขึ้น';
-      btnUp.addEventListener('click', () => {
-        if (index > 0) {
-          [selectedFiles[index], selectedFiles[index - 1]] = [selectedFiles[index - 1], selectedFiles[index]];
-          updateFileList();
-        }
-      });
-
-      // ปุ่มเลื่อนลง
-      const btnDown = document.createElement('button');
-      btnDown.className = 'btn btn-sm btn-outline-secondary me-1';
-      btnDown.textContent = '↓';
-      btnDown.disabled = index === selectedFiles.length - 1;
-      btnDown.title = 'เลื่อนลง';
-      btnDown.addEventListener('click', () => {
-        if (index < selectedFiles.length - 1) {
-          [selectedFiles[index], selectedFiles[index + 1]] = [selectedFiles[index + 1], selectedFiles[index]];
-          updateFileList();
-        }
-      });
+      fileName.className = 'flex-grow-1 me-2'; // Allow file name to grow
 
       // ปุ่มลบไฟล์
       const btnRemove = document.createElement('button');
@@ -108,14 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedFiles.length === 0) {
           convertBtn.disabled = true;
           convertImageBtn.disabled = true;
+          clearAllBtn.disabled = true; // Disable clear all button
           resultArea.innerHTML = '';
         }
       });
 
       const btnGroup = document.createElement('div');
-      btnGroup.appendChild(btnUp);
-      btnGroup.appendChild(btnDown);
-      btnGroup.appendChild(btnRemove);
+      btnGroup.appendChild(btnRemove); // Only remove button, no up/down buttons
 
       li.appendChild(fileName);
       li.appendChild(btnGroup);
@@ -125,7 +111,87 @@ document.addEventListener('DOMContentLoaded', () => {
     fileList.style.display = selectedFiles.length ? 'block' : 'none';
   }
 
-  // แปลงไฟล์ภาพเป็น PDF
+  // New function: Clear all selected files
+  function clearAllFiles() {
+    selectedFiles = [];
+    updateFileList();
+    convertBtn.disabled = true;
+    convertImageBtn.disabled = true;
+    clearAllBtn.disabled = true;
+    resultArea.innerHTML = '';
+  }
+
+  // --- Drag and Drop Functions for reordering the list ---
+  function handleDragStart(e) {
+    if (e.target.tagName === 'LI') {
+      draggingItem = e.target;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', e.target.dataset.index); // Store the index
+      e.target.classList.add('dragging'); // Add a class for visual feedback
+    }
+  }
+
+  function handleListDragOver(e) {
+    e.preventDefault();
+    if (e.target.tagName === 'LI' && draggingItem && e.target !== draggingItem) {
+      const bounding = e.target.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+
+      if (e.clientY - offset > 0) {
+        // Dragging over the bottom half
+        e.target.classList.remove('drag-over-top');
+        e.target.classList.add('drag-over-bottom');
+      } else {
+        // Dragging over the top half
+        e.target.classList.remove('drag-over-bottom');
+        e.target.classList.add('drag-over-top');
+      }
+    }
+  }
+
+  function handleListDrop(e) {
+    e.preventDefault();
+    if (e.target.tagName === 'LI' && draggingItem) {
+      const fromIndex = parseInt(draggingItem.dataset.index);
+      let toIndex = parseInt(e.target.dataset.index);
+
+      // Determine the precise drop position based on mouse Y
+      const bounding = e.target.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+
+      if (e.clientY - offset > 0) {
+        // Dropped below the current item
+        toIndex++; // Insert after the current item
+      }
+
+      // Ensure toIndex doesn't exceed array bounds
+      if (toIndex > selectedFiles.length) {
+          toIndex = selectedFiles.length;
+      }
+      if (toIndex < 0) {
+          toIndex = 0;
+      }
+
+
+      const [movedItem] = selectedFiles.splice(fromIndex, 1);
+      selectedFiles.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, movedItem); // Adjust toIndex if moving down
+
+      updateFileList();
+    }
+  }
+
+  function handleDragEnd(e) {
+    if (draggingItem) {
+      draggingItem.classList.remove('dragging');
+      // Remove any drag-over classes from all list items
+      document.querySelectorAll('#file-list li').forEach(item => {
+        item.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      draggingItem = null;
+    }
+  }
+
+  // ฟังก์ชันแปลงไฟล์ภาพเป็น PDF
   async function convertToPdf() {
     if (selectedFiles.length === 0) return;
 
@@ -142,13 +208,23 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    try {
+   try {
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i];
-        const imgData = await readImage(file);
+        const imgData = await readImage(file); // This is the base64 data
+
         const img = new Image();
         img.src = imgData;
         await new Promise(res => (img.onload = res));
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        // Convert the canvas content to a JPEG data URL.
+        const imageDataForPdf = canvas.toDataURL('image/jpeg', 0.9); // 0.9 is quality
 
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -159,7 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const y = (pageHeight - height) / 2;
 
         if (i > 0) doc.addPage();
-        doc.addImage(img, 'JPEG', x, y, width, height);
+
+        doc.addImage(imageDataForPdf, 'JPEG', x, y, width, height);
       }
 
       const pdfUrl = doc.output('bloburl');
@@ -242,6 +319,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btnRemove.className = 'btn btn-outline-danger btn-sm ms-2';
         btnRemove.addEventListener('click', () => {
           wrapper.remove();
+          // เมื่อลบแล้วให้เช็คว่าควรซ่อนปุ่ม Download All หรือไม่
+          if (resultArea.querySelectorAll('a.btn-outline-success').length <= 1) {
+            const downloadAllBtn = document.getElementById('download-all-btn');
+            if(downloadAllBtn) downloadAllBtn.remove();
+          }
         });
 
         wrapper.appendChild(link);
@@ -269,8 +351,55 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       }
-
+      
       resultArea.innerHTML = '';
+
+      // *** เพิ่มปุ่มดาวน์โหลดทั้งหมด ***
+      if (allLinks.length > 1) {
+        const downloadAllBtn = document.createElement('button');
+        downloadAllBtn.textContent = 'ดาวน์โหลดทั้งหมด (.zip)';
+        downloadAllBtn.className = 'btn btn-primary mb-3 d-block w-100';
+        downloadAllBtn.id = 'download-all-btn';
+        downloadAllBtn.addEventListener('click', async () => {
+          if (typeof JSZip === 'undefined') {
+            alert('ไม่สามารถดาวน์โหลดทั้งหมดได้ เนื่องจากไม่พบไลบรารี JSZip');
+            return;
+          }
+          
+          downloadAllBtn.disabled = true;
+          downloadAllBtn.textContent = 'กำลังบีบอัดไฟล์...';
+          
+          try {
+            const zip = new JSZip();
+            const linksToZip = resultArea.querySelectorAll('a.btn-outline-success');
+
+            for (const link of linksToZip) {
+              const response = await fetch(link.href);
+              const blob = await response.blob();
+              zip.file(link.download, blob);
+            }
+
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(zipBlob);
+            const tempLink = document.createElement('a');
+            tempLink.href = url;
+            tempLink.download = 'converted_files.zip';
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+            URL.revokeObjectURL(url);
+
+          } catch (err) {
+            console.error("Error zipping files:", err);
+            alert("เกิดข้อผิดพลาดในการบีบอัดไฟล์");
+          } finally {
+            downloadAllBtn.disabled = false;
+            downloadAllBtn.textContent = 'ดาวน์โหลดทั้งหมด (.zip)';
+          }
+        });
+        resultArea.appendChild(downloadAllBtn);
+      }
+
       allLinks.forEach(el => resultArea.appendChild(el));
 
     } catch (error) {
@@ -291,8 +420,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // เริ่มต้นซ่อนปุ่ม convert
+  // เริ่มต้นซ่อนปุ่ม convert และ clear all
   convertBtn.disabled = true;
   convertImageBtn.disabled = true;
+  clearAllBtn.disabled = true; // Disable clear all button initially
   fileList.style.display = 'none';
 });

@@ -53,3 +53,37 @@ body {
 #toggle-dark-mode .bi-moon-stars-fill {
     display: inline-block;
 }
+
+ #file-list li {
+    cursor: grab; /* Change cursor to indicate draggable */
+    transition: all 0.2s ease-in-out;
+    position: relative; /* For the pseudo-elements below */
+  }
+
+  #file-list li.dragging {
+    opacity: 0.5; /* Make the dragged item semi-transparent */
+    background-color: #f8d7da; /* Light red background for dragging */
+  }
+
+  /* Visual feedback for where the item will be dropped */
+  #file-list li.drag-over-top::before {
+    content: '';
+    position: absolute;
+    top: -2px; /* Adjust if needed to fit between items */
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: #007bff; /* Blue line */
+    z-index: 1;
+  }
+
+  #file-list li.drag-over-bottom::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; /* Adjust if needed to fit between items */
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: #007bff; /* Blue line */
+    z-index: 1;
+  }

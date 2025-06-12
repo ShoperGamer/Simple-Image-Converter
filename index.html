@@ -33,6 +33,9 @@
               <small class="text-muted">รองรับไฟล์: PNG, JPG, WEBP, AVIF</small>
             </div>
 
+            <div class="d-flex justify-content-end">
+            <button id="clear-all-btn" class="btn btn-danger mt-3" disabled>ลบไฟล์ทั้งหมด</button>
+            </div>
             <ul id="file-list" class="list-group list-group-flush my-4" style="display:none;"></ul>
 
             <div class="mb-4">
@@ -63,6 +66,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <script>
     // Ensure jsPDF is loaded correctly
