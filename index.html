@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เว็บแอปแปลงไฟล์รูปภาพ</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/darkmode.css" />
+</head>
+<body>
+  <div class="container my-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 col-md-10">
+        <div class="card shadow-lg border-0">
+          <div class="card-header bg-primary text-white text-center">
+            <h1 class="my-3"><i class="bi bi-images me-2"></i>โปรแกรมแปลงไฟล์รูปภาพ</h1>
+          </div>
+          <div class="card-body p-4 p-md-5">
+            <div class="d-flex justify-content-end mb-4">
+              <button id="toggle-dark-mode" class="btn btn-outline-secondary">
+                <i class="bi bi-moon-stars-fill me-2"></i><span>โหมดกลางคืน</span>
+              </button>
+            </div>
+
+            <div id="drop-zone" class="border border-2 border-dashed rounded-3 p-5 text-center bg-light mb-4">
+              <i class="bi bi-cloud-arrow-up-fill display-4 text-muted mb-3"></i>
+              <p class="mb-1 fw-bold">ลากไฟล์มาวางที่นี่ หรือ คลิกเพื่อเลือกไฟล์</p>
+              <small class="text-muted">รองรับไฟล์: PNG, JPG, WEBP, AVIF</small>
+            </div>
+
+            <ul id="file-list" class="list-group list-group-flush my-4" style="display:none;"></ul>
+
+            <div class="mb-4">
+              <label for="format-select" class="form-label fw-bold">เลือกนามสกุลที่ต้องการแปลง:</label>
+              <select id="format-select" class="form-select form-select-lg">
+                <option value="jpg">JPG</option>
+                <option value="png">PNG</option>
+                <option value="webp">WEBP</option>
+                <option value="avif">AVIF</option>
+              </select>
+            </div>
+
+            <div class="d-grid gap-3">
+              <button id="convert-image-btn" class="btn btn-secondary btn-lg" disabled>
+                <i class="bi bi-arrow-repeat me-2"></i>แปลงภาพเป็นนามสกุลที่เลือก
+              </button>
+              <button id="convert-btn" class="btn btn-primary btn-lg" disabled>
+                <i class="bi bi-file-earmark-pdf-fill me-2"></i>แปลงและรวมเป็น PDF
+              </button>
+            </div>
+
+            <div id="result-area" class="mt-5 text-center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    // Ensure jsPDF is loaded correctly
+    if (window.jspdf && window.jspdf.jsPDF) {
+      window.jsPDF = window.jspdf.jsPDF;
+    } else if (window.jspdf?.default?.jsPDF) {
+      window.jsPDF = window.jspdf.default.jsPDF;
+    } else {
+      console.error('jsPDF not found in window.jspdf');
+    }
+  </script>
+
+  <script src="javascript/pdf-converter.js"></script>
+  <script src="javascript/darkmode.js"></script>
+  <script src="javascript/index.js"></script>
+</body>
+</html>

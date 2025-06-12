@@ -1,0 +1,55 @@
+/* General Styles & Light Mode */
+body {
+  font-family: 'Sarabun', sans-serif;
+  background-color: #f0f2f5;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card {
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.card-header {
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+
+#drop-zone {
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  border-style: dashed !important;
+  background-color: #f8f9fa;
+}
+
+#drop-zone.dragover {
+  background-color: #e9ecef;
+  border-color: #0d6efd !important;
+}
+
+.btn {
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.list-group-item {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    margin-bottom: -1px; /* Overlap borders */
+}
+
+#result-area a {
+  margin: 0.5rem;
+}
+
+#toggle-dark-mode .bi-brightness-high-fill {
+    display: none;
+}
+#toggle-dark-mode .bi-moon-stars-fill {
+    display: inline-block;
+}
