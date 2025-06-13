@@ -2,17 +2,24 @@
 body.dark-mode {
   background-color: #121212;
   color: #e0e0e0;
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 body.dark-mode .card {
   background-color: #1e1e1e;
   border-color: #333;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .card-header {
-    background-color: #0d6efd !important;
-    color: #ffffff;
-    border-bottom: 1px solid #333;
+  background: linear-gradient(135deg, #3a0ca3 0%, #4361ee 100%) !important;
+  color: #ffffff;
+  border-bottom: 1px solid #333;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode #drop-zone {
@@ -24,30 +31,46 @@ body.dark-mode #drop-zone {
 body.dark-mode #drop-zone.dragover {
   background-color: #333;
   border-color: #4dabf7 !important;
+  box-shadow: 0 0 0 4px rgba(77, 171, 247, 0.2);
 }
 
 body.dark-mode .list-group-item {
   background-color: #2c2c2c;
   color: #e0e0e0;
   border-color: #444;
+  transition: all 0.3s ease;
 }
 
+body.dark-mode .list-group-item:hover {
+  background-color: #383838;
+  color: #ffffff;
+}
+
+body.dark-mode .form-control,
 body.dark-mode .form-select {
   background-color: #2a2a2a;
   color: #e0e0e0;
   border-color: #555;
+  transition: all 0.3s ease;
 }
 
+body.dark-mode .form-control:focus,
 body.dark-mode .form-select:focus {
   background-color: #333;
-  color: #e0e0e0;
+  color: #ffffff;
   border-color: #4dabf7;
   box-shadow: 0 0 0 0.25rem rgba(77, 171, 247, 0.25);
 }
 
 body.dark-mode .btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .btn-primary:hover {
+  background-color: #1a7eff;
+  border-color: #1a7eff;
 }
 
 body.dark-mode .btn-secondary {
@@ -57,23 +80,106 @@ body.dark-mode .btn-secondary {
 }
 
 body.dark-mode .btn-outline-secondary {
-    color: #ccc;
-    border-color: #555;
+  color: #ccc;
+  border-color: #555;
 }
 
 body.dark-mode .btn-outline-secondary:hover {
-    background-color: #3a3a3a;
-    color: #fff;
+  background-color: #3a3a3a;
+  color: #fff;
 }
 
 body.dark-mode .text-muted {
-    color: #888 !important;
+  color: #888 !important;
+}
+
+/* Dark mode toggle button */
+#toggle-dark-mode {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+#toggle-dark-mode .bi {
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 body.dark-mode #toggle-dark-mode .bi-brightness-high-fill {
-    display: inline-block;
+  display: inline-block;
+  transform: rotate(360deg);
 }
 
 body.dark-mode #toggle-dark-mode .bi-moon-stars-fill {
-    display: none;
+  display: none;
+  transform: rotate(-360deg);
+  opacity: 0;
+}
+
+/* Dark mode animations */
+@keyframes darkModeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body.dark-mode .card {
+  animation: darkModeFadeIn 0.5s ease-out;
+}
+
+/* Special dark mode effects */
+body.dark-mode #drop-zone::before {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+}
+
+body.dark-mode .btn::after {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Dark mode file list drag indicators */
+body.dark-mode #file-list li.drag-over-top::before {
+  background: linear-gradient(90deg, #4dabf7, #69db7c);
+}
+
+body.dark-mode #file-list li.drag-over-bottom::after {
+  background: linear-gradient(90deg, #4dabf7, #69db7c);
+}
+
+/* Dark mode result area */
+body.dark-mode #result-area a {
+  color: #e0e0e0;
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+body.dark-mode #result-area a:hover {
+  background-color: #383838;
+  color: #ffffff;
+}
+
+/* Dark mode spinner */
+body.dark-mode .spinner {
+  border-top-color: #4dabf7;
+}
+
+/* Dark mode tooltip */
+body.dark-mode [data-tooltip]::after {
+  background: #4dabf7;
+  color: #121212;
+  font-weight: 500;
+}
+
+/* Dark mode floating button */
+body.dark-mode .fab {
+  background-color: #4dabf7;
+  color: #121212;
+  box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+}
+
+body.dark-mode .fab:hover {
+  box-shadow: 0 6px 16px rgba(77, 171, 247, 0.4);
 }

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dropZone.addEventListener('drop', handleDrop);
   convertBtn.addEventListener('click', convertToPdf);
   convertImageBtn.addEventListener('click', convertImages);
-  clearAllBtn.addEventListener('click', clearAllFiles); // New: Clear all files
+  clearAllBtn.addEventListener('click', clearAllFiles); 
 
   // Add drag and drop listeners to the file list itself for reordering
   fileList.addEventListener('dragstart', handleDragStart);
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleClick() {
     const tempInput = document.createElement('input');
     tempInput.type = 'file';
-    tempInput.accept = '.png,.jpg,.jpeg,.webp,.avif,.pdf';
+    tempInput.accept = '.png,.jpg,.jpeg,.webp,.avif,.gif,.pdf';
     tempInput.multiple = true;
     tempInput.style.display = 'none';
     tempInput.addEventListener('change', (e) => handleFiles(e.target.files));
@@ -56,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleFiles(files) {
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/avif', 'application/pdf'];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 
+    'image/avif', 'image/gif' , 'application/pdf'];
     const newFiles = Array.from(files).filter(file => {
       const isAllowed = allowedTypes.includes(file.type);
       const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
@@ -69,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateFileList();
     convertBtn.disabled = false;
     convertImageBtn.disabled = false;
-    clearAllBtn.disabled = false; // Enable clear all button
+    clearAllBtn.disabled = false; 
   }
 
   function updateFileList() {
@@ -77,12 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedFiles.forEach((file, index) => {
       const li = document.createElement('li');
       li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.setAttribute('draggable', 'true'); // Make list items draggable
-      li.dataset.index = index; // Store original index
+      li.setAttribute('draggable', 'true'); 
+      li.dataset.index = index; 
 
       const fileName = document.createElement('span');
       fileName.textContent = file.name;
-      fileName.className = 'flex-grow-1 me-2'; // Allow file name to grow
+      fileName.className = 'flex-grow-1 me-2';
 
       // ปุ่มลบไฟล์
       const btnRemove = document.createElement('button');
@@ -95,13 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedFiles.length === 0) {
           convertBtn.disabled = true;
           convertImageBtn.disabled = true;
-          clearAllBtn.disabled = true; // Disable clear all button
+          clearAllBtn.disabled = true;
           resultArea.innerHTML = '';
         }
       });
 
       const btnGroup = document.createElement('div');
-      btnGroup.appendChild(btnRemove); // Only remove button, no up/down buttons
+      btnGroup.appendChild(btnRemove); 
 
       li.appendChild(fileName);
       li.appendChild(btnGroup);
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // New function: Clear all selected files
-  function clearAllFiles() {
+ function clearAllFiles() {
     selectedFiles = [];
     updateFileList();
     convertBtn.disabled = true;
@@ -126,8 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.tagName === 'LI') {
       draggingItem = e.target;
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', e.target.dataset.index); // Store the index
-      e.target.classList.add('dragging'); // Add a class for visual feedback
+      e.dataTransfer.setData('text/plain', e.target.dataset.index);
+      e.target.classList.add('dragging'); 
     }
   }
 
@@ -161,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (e.clientY - offset > 0) {
         // Dropped below the current item
-        toIndex++; // Insert after the current item
+        toIndex++; 
       }
 
       // Ensure toIndex doesn't exceed array bounds
@@ -174,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
       const [movedItem] = selectedFiles.splice(fromIndex, 1);
-      selectedFiles.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, movedItem); // Adjust toIndex if moving down
+      selectedFiles.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, movedItem); 
 
       updateFileList();
     }
@@ -211,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
    try {
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i];
-        const imgData = await readImage(file); // This is the base64 data
+        const imgData = await readImage(file); 
 
         const img = new Image();
         img.src = imgData;
@@ -224,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.drawImage(img, 0, 0);
 
         // Convert the canvas content to a JPEG data URL.
-        const imageDataForPdf = canvas.toDataURL('image/jpeg', 0.9); // 0.9 is quality
+        const imageDataForPdf = canvas.toDataURL('image/jpeg', 0.9); 
 
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -411,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ฟังก์ชันอ่านไฟล์ภาพ
-  function readImage(file) {
+function readImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -419,10 +420,10 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.readAsDataURL(file);
     });
   }
-
+  
   // เริ่มต้นซ่อนปุ่ม convert และ clear all
   convertBtn.disabled = true;
   convertImageBtn.disabled = true;
-  clearAllBtn.disabled = true; // Disable clear all button initially
+  clearAllBtn.disabled = true; 
   fileList.style.display = 'none';
 });
