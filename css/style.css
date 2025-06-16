@@ -260,3 +260,23 @@ header {
     padding: 2rem;
   }
 }
+
+/* dark pdf*/
+#pdf-type-select {
+  margin-bottom: 1rem;
+}
+
+/* ปรับแต่ง Dropdown */
+.dropdown-menu {
+  transform: translateX(-50%) !important;
+  left: 50% !important;
+}
+
+#confirm-convert-btn {
+  margin-top: 10px;
+}
+
+/* ปรับขนาดตัวเลือก */
+#pdf-type-select {
+  width: 100%;
+}

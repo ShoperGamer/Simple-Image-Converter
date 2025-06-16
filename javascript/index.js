@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const formatSelect = document.getElementById('format-select');
   const resultArea = document.getElementById('result-area');
   const clearAllBtn = document.getElementById('clear-all-btn'); 
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
 
   // State Variables
   let selectedFiles = [];
@@ -56,8 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleFiles(files) {
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 
-    'image/avif', 'image/gif' , 'application/pdf'];
+    const allowedTypes = [
+      'image/png', 'image/jpeg', 'image/webp', 
+      'image/avif', 'image/gif', 'application/pdf',
+    ];
     const newFiles = Array.from(files).filter(file => {
       const isAllowed = allowedTypes.includes(file.type);
       const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
@@ -85,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
       fileName.textContent = file.name;
       fileName.className = 'flex-grow-1 me-2';
 
-      // ปุ่มลบไฟล์
       const btnRemove = document.createElement('button');
       btnRemove.className = 'btn btn-sm btn-outline-danger';
       btnRemove.textContent = 'ลบ';
@@ -112,14 +116,30 @@ document.addEventListener('DOMContentLoaded', () => {
     fileList.style.display = selectedFiles.length ? 'block' : 'none';
   }
 
-  // New function: Clear all selected files
- function clearAllFiles() {
+  function clearAllFiles() {
     selectedFiles = [];
     updateFileList();
     convertBtn.disabled = true;
     convertImageBtn.disabled = true;
     clearAllBtn.disabled = true;
     resultArea.innerHTML = '';
+  }
+
+  // Progress Bar Functions
+  function updateProgress(percentage, message = '') {
+    progressBar.style.width = `${percentage}%`;
+    progressBar.setAttribute('aria-valuenow', percentage);
+    progressText.textContent = message || `กำลังประมวลผล... ${percentage}%`;
+    document.getElementById('progress-percent').textContent = `${percentage}%`;
+  }
+
+  function showProgress() {
+    progressContainer.style.display = 'block';
+    updateProgress(0, 'กำลังเริ่มต้น...');
+  }
+
+  function hideProgress() {
+    progressContainer.style.display = 'none';
   }
 
   // --- Drag and Drop Functions for reordering the list ---
@@ -139,11 +159,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const offset = bounding.y + (bounding.height / 2);
 
       if (e.clientY - offset > 0) {
-        // Dragging over the bottom half
         e.target.classList.remove('drag-over-top');
         e.target.classList.add('drag-over-bottom');
       } else {
-        // Dragging over the top half
         e.target.classList.remove('drag-over-bottom');
         e.target.classList.add('drag-over-top');
       }
@@ -156,23 +174,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const fromIndex = parseInt(draggingItem.dataset.index);
       let toIndex = parseInt(e.target.dataset.index);
 
-      // Determine the precise drop position based on mouse Y
       const bounding = e.target.getBoundingClientRect();
       const offset = bounding.y + (bounding.height / 2);
 
       if (e.clientY - offset > 0) {
-        // Dropped below the current item
         toIndex++; 
       }
 
-      // Ensure toIndex doesn't exceed array bounds
       if (toIndex > selectedFiles.length) {
           toIndex = selectedFiles.length;
       }
       if (toIndex < 0) {
           toIndex = 0;
       }
-
 
       const [movedItem] = selectedFiles.splice(fromIndex, 1);
       selectedFiles.splice(toIndex > fromIndex ? toIndex -1 : toIndex, 0, movedItem); 
@@ -184,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleDragEnd(e) {
     if (draggingItem) {
       draggingItem.classList.remove('dragging');
-      // Remove any drag-over classes from all list items
       document.querySelectorAll('#file-list li').forEach(item => {
         item.classList.remove('drag-over-top', 'drag-over-bottom');
       });
@@ -197,23 +210,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (selectedFiles.length === 0) return;
 
     convertBtn.disabled = true;
-    resultArea.innerHTML = '<p>กำลังแปลงไฟล์เป็น PDF...</p>';
+    showProgress();
+    resultArea.innerHTML = '';
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+
+    const pdfTypeSelect = document.getElementById('pdf-type-select');
+    const isGrayscale = pdfTypeSelect.value === 'grayscale';
 
     const imageFiles = selectedFiles.filter(file => file.type.startsWith('image/'));
     if (imageFiles.length === 0) {
       resultArea.innerHTML = `<p class="text-danger">ไม่มีไฟล์ภาพที่สามารถแปลงเป็น PDF ได้</p>`;
       convertBtn.disabled = false;
+      hideProgress();
       return;
     }
 
-   try {
-      for (let i = 0; i < imageFiles.length; i++) {
+    try {
+      const totalFiles = imageFiles.length;
+      for (let i = 0; i < totalFiles; i++) {
         const file = imageFiles[i];
+        const progress = Math.floor((i / totalFiles) * 100);
+        updateProgress(progress, `กำลังแปลงไฟล์ ${i+1}/${totalFiles}...`);
+        
         const imgData = await readImage(file); 
-
         const img = new Image();
         img.src = imgData;
         await new Promise(res => (img.onload = res));
@@ -224,7 +245,19 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // Convert the canvas content to a JPEG data URL.
+        // แปลงเป็นขาวดำถ้าต้องการ
+        if (isGrayscale) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            data[i] = avg;     // red
+            data[i + 1] = avg; // green
+            data[i + 2] = avg; // blue
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+
         const imageDataForPdf = canvas.toDataURL('image/jpeg', 0.9); 
 
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -236,13 +269,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const y = (pageHeight - height) / 2;
 
         if (i > 0) doc.addPage();
-
         doc.addImage(imageDataForPdf, 'JPEG', x, y, width, height);
       }
 
+      updateProgress(100, 'แปลงไฟล์เสร็จสิ้น!');
+      setTimeout(() => hideProgress(), 1000);
+
       const pdfUrl = doc.output('bloburl');
 
-      // สร้าง div ห่อ link และปุ่มลบ
       const wrapper = document.createElement('div');
       wrapper.className = 'd-flex align-items-center mb-2';
 
@@ -261,12 +295,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       wrapper.appendChild(link);
       wrapper.appendChild(btnRemove);
-      resultArea.innerHTML = '';
       resultArea.appendChild(wrapper);
 
     } catch (error) {
       console.error('PDF conversion error:', error);
       resultArea.innerHTML = `<p class="text-danger">เกิดข้อผิดพลาดในการสร้าง PDF: ${error.message}</p>`;
+      hideProgress();
     } finally {
       convertBtn.disabled = false;
     }
@@ -277,60 +311,53 @@ document.addEventListener('DOMContentLoaded', () => {
     if (selectedFiles.length === 0) return;
 
     convertImageBtn.disabled = true;
-    resultArea.innerHTML = '<p>กำลังแปลงไฟล์...</p>';
+    showProgress();
+    resultArea.innerHTML = '';
+    
     const targetFormat = formatSelect.value;
-    const imageFiles = selectedFiles.filter(f => f.type.startsWith('image/'));
+    const imageFiles = selectedFiles.filter(f => f.type.startsWith('image/') || f.type === 'image/svg+xml');
     const pdfFiles = selectedFiles.filter(f => f.type === 'application/pdf');
     const allLinks = [];
 
     try {
-      // แปลงไฟล์ภาพ
+      const totalFiles = imageFiles.length + pdfFiles.length;
+      let processedFiles = 0;
+
+      // แปลงไฟล์ภาพ (รวมถึง SVG)
       for (const file of imageFiles) {
-        const imageData = await readImage(file);
-        const img = new Image();
-        img.src = imageData;
-        await new Promise(res => img.onload = res);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const mimeType = `image/${targetFormat === 'jpg' ? 'jpeg' : targetFormat}`;
-        try {
-          const test = canvas.toDataURL(mimeType);
-          if (!test.startsWith(`data:${mimeType}`)) throw new Error();
-        } catch {
-          throw new Error(`เบราว์เซอร์ไม่รองรับการแปลงเป็น ${targetFormat.toUpperCase()}`);
-        }
-
-        const dataUrl = canvas.toDataURL(mimeType);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = file.name.replace(/\.\w+$/, `.${targetFormat}`);
-        link.textContent = `ดาวน์โหลด ${link.download}`;
-        link.className = 'btn btn-outline-success d-block mb-2';
-
-        // ปุ่มลบไฟล์ที่แปลงแล้ว
-        const wrapper = document.createElement('div');
-        wrapper.className = 'd-flex align-items-center mb-2';
-        const btnRemove = document.createElement('button');
-        btnRemove.textContent = 'ลบ';
-        btnRemove.className = 'btn btn-outline-danger btn-sm ms-2';
-        btnRemove.addEventListener('click', () => {
-          wrapper.remove();
-          // เมื่อลบแล้วให้เช็คว่าควรซ่อนปุ่ม Download All หรือไม่
-          if (resultArea.querySelectorAll('a.btn-outline-success').length <= 1) {
-            const downloadAllBtn = document.getElementById('download-all-btn');
-            if(downloadAllBtn) downloadAllBtn.remove();
+        const progress = Math.floor((processedFiles / totalFiles) * 100);
+        updateProgress(progress, `กำลังแปลงไฟล์ ${processedFiles+1}/${totalFiles}...`);
+        
+        // กรณีแปลงเป็น SVG
+        if (targetFormat === 'svg') {
+          if (file.type === 'image/svg+xml') {
+            // ถ้าไฟล์ต้นทางเป็น SVG อยู่แล้ว
+            const svgData = await readFileAsText(file);
+            const link = createDownloadLink(new Blob([svgData], { type: 'image/svg+xml' }), 'image/svg+xml', file.name);
+            allLinks.push(link);
+          } else {
+            // แปลงจากภาพอื่นเป็น SVG
+            const svgData = await convertImageToSvg(file);
+            const link = createDownloadLink(new Blob([svgData], { type: 'image/svg+xml' }), 'image/svg+xml', file.name.replace(/\.\w+$/, '.svg'));
+            allLinks.push(link);
           }
-        });
-
-        wrapper.appendChild(link);
-        wrapper.appendChild(btnRemove);
-
-        allLinks.push(wrapper);
+        } 
+        // กรณีแปลงจาก SVG เป็นภาพอื่น
+        else if (file.type === 'image/svg+xml') {
+          const imageBlob = await convertSvgToImage(file, targetFormat);
+          const mimeType = `image/${targetFormat === 'jpg' ? 'jpeg' : targetFormat}`;
+          const link = createDownloadLink(imageBlob, mimeType, file.name.replace(/\.svg$/, `.${targetFormat}`));
+          allLinks.push(link);
+        }
+        // กรณีแปลงภาพปกติเป็นภาพอื่น
+        else {
+          const imageBlob = await convertImageToFormat(file, targetFormat);
+          const mimeType = `image/${targetFormat === 'jpg' ? 'jpeg' : targetFormat}`;
+          const link = createDownloadLink(imageBlob, mimeType, file.name.replace(/\.\w+$/, `.${targetFormat}`));
+          allLinks.push(link);
+        }
+        
+        processedFiles++;
       }
 
       // แปลงไฟล์ PDF เป็นภาพ (ถ้ามี)
@@ -340,22 +367,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         for (const pdfFile of pdfFiles) {
+          const progress = Math.floor((processedFiles / totalFiles) * 100);
+          updateProgress(progress, `กำลังแปลงไฟล์ ${processedFiles+1}/${totalFiles}...`);
+          
           try {
             const pdfLinks = await pdfConverter.convertPdfToImages(pdfFile, targetFormat);
             pdfLinks.forEach(link => allLinks.push(link));
+            processedFiles++;
           } catch (error) {
             console.error('PDF conversion error:', error);
             const errMsg = document.createElement('p');
             errMsg.className = 'text-danger';
             errMsg.textContent = `แปลง ${pdfFile.name} ไม่สำเร็จ: ${error.message}`;
             resultArea.appendChild(errMsg);
+            processedFiles++;
           }
         }
       }
       
-      resultArea.innerHTML = '';
+      updateProgress(100, 'แปลงไฟล์เสร็จสิ้น!');
+      setTimeout(() => hideProgress(), 1000);
 
-      // *** เพิ่มปุ่มดาวน์โหลดทั้งหมด ***
+      // เพิ่มปุ่มดาวน์โหลดทั้งหมด
       if (allLinks.length > 1) {
         const downloadAllBtn = document.createElement('button');
         downloadAllBtn.textContent = 'ดาวน์โหลดทั้งหมด (.zip)';
@@ -406,13 +439,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Conversion error:', error);
       resultArea.innerHTML = `<p class="text-danger">เกิดข้อผิดพลาด: ${error.message}</p>`;
+      hideProgress();
     } finally {
       convertImageBtn.disabled = false;
     }
   }
 
   // ฟังก์ชันอ่านไฟล์ภาพ
-function readImage(file) {
+  function readImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -420,10 +454,55 @@ function readImage(file) {
       reader.readAsDataURL(file);
     });
   }
-  
+
+  // ฟังก์ชันอ่านไฟล์เป็นข้อความ (สำหรับ SVG)
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์ SVG ได้'));
+      reader.readAsText(file);
+    });
+  }
+
+  // ฟังก์ชันสร้างลิงก์ดาวน์โหลด
+  function createDownloadLink(blob, mimeType, fileName) {
+    const url = URL.createObjectURL(blob);
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex align-items-center mb-2';
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.textContent = `ดาวน์โหลด ${fileName}`;
+    link.className = 'btn btn-outline-success me-2';
+    
+    // เพิ่มตัวอย่างภาพก่อนดาวน์โหลด (สำหรับไฟล์ภาพ)
+    if (mimeType.startsWith('image/')) {
+        const imgPreview = document.createElement('img');
+        imgPreview.src = url;
+        imgPreview.style.maxHeight = '50px';
+        imgPreview.className = 'me-2';
+        wrapper.appendChild(imgPreview);
+    }
+    
+    const btnRemove = document.createElement('button');
+    btnRemove.textContent = 'ลบ';
+    btnRemove.className = 'btn btn-outline-danger btn-sm';
+    btnRemove.addEventListener('click', () => {
+        URL.revokeObjectURL(url);
+        wrapper.remove();
+    });  
+    wrapper.appendChild(link);
+    wrapper.appendChild(btnRemove);
+    return wrapper;
+  }
+
   // เริ่มต้นซ่อนปุ่ม convert และ clear all
   convertBtn.disabled = true;
   convertImageBtn.disabled = true;
   clearAllBtn.disabled = true; 
   fileList.style.display = 'none';
+  progressContainer.style.display = 'none';
 });
