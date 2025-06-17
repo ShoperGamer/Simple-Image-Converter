@@ -13,7 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // State Variables
   let selectedFiles = [];
-  let draggingItem = null; 
+  let draggingItem = null;
+  let touchStartY = 0;
+  let touchStartX = 0;
+  let touchMoveThreshold = 10;
+  let isTouchDragging = false;
 
   // Event Listeners
   dropZone.addEventListener('click', handleClick);
@@ -24,17 +28,54 @@ document.addEventListener('DOMContentLoaded', () => {
   convertImageBtn.addEventListener('click', convertImages);
   clearAllBtn.addEventListener('click', clearAllFiles); 
 
-  // Add drag and drop listeners to the file list itself for reordering
+  // Mouse drag events
   fileList.addEventListener('dragstart', handleDragStart);
   fileList.addEventListener('dragover', handleListDragOver);
   fileList.addEventListener('drop', handleListDrop);
   fileList.addEventListener('dragend', handleDragEnd);
 
+  // Touch events
+  fileList.addEventListener('touchstart', handleTouchStart, { passive: false });
+  fileList.addEventListener('touchmove', handleTouchMove, { passive: false });
+  fileList.addEventListener('touchend', handleTouchEnd);
+  fileList.addEventListener('touchcancel', handleTouchEnd);
+
+  // Add touch style
+  const style = document.createElement('style');
+  style.textContent = `
+    #file-list li.touch-dragging {
+      opacity: 0.8;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      background-color: #f8f9fa !important;
+      z-index: 1000;
+      position: relative;
+    }
+    #file-list li.drag-over-top {
+      border-top: 3px solid #0d6efd;
+      margin-top: 5px;
+    }
+    #file-list li.drag-over-bottom {
+      border-bottom: 3px solid #0d6efd;
+      margin-bottom: 5px;
+    }
+    #file-list li.dragging {
+      opacity: 0.5;
+    }
+    @media (hover: none) {
+      #file-list li {
+        touch-action: pan-y;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
   // Function to handle file input click
   function handleClick() {
     const tempInput = document.createElement('input');
     tempInput.type = 'file';
-    tempInput.accept = '.png,.jpg,.jpeg,.webp,.avif,.gif,.pdf';
+    tempInput.accept = '.png,.jpg,.jpeg,.webp,.avif,.gif,.pdf,.svg';
     tempInput.multiple = true;
     tempInput.style.display = 'none';
     tempInput.addEventListener('change', (e) => handleFiles(e.target.files));
@@ -62,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const allowedTypes = [
       'image/png', 'image/jpeg', 'image/webp', 
       'image/avif', 'image/gif', 'application/pdf',
+      'image/svg+xml'
     ];
     const newFiles = Array.from(files).filter(file => {
       const isAllowed = allowedTypes.includes(file.type);
@@ -88,13 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const fileName = document.createElement('span');
       fileName.textContent = file.name;
-      fileName.className = 'flex-grow-1 me-2';
+      fileName.className = 'flex-grow-1 me-2 text-truncate';
 
       const btnRemove = document.createElement('button');
       btnRemove.className = 'btn btn-sm btn-outline-danger';
       btnRemove.textContent = 'ลบ';
       btnRemove.title = 'ลบไฟล์นี้';
-      btnRemove.addEventListener('click', () => {
+      btnRemove.addEventListener('click', (e) => {
+        e.stopPropagation();
         selectedFiles.splice(index, 1);
         updateFileList();
         if (selectedFiles.length === 0) {
@@ -106,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const btnGroup = document.createElement('div');
+      btnGroup.className = 'd-flex';
       btnGroup.appendChild(btnRemove); 
 
       li.appendChild(fileName);
@@ -142,13 +186,13 @@ document.addEventListener('DOMContentLoaded', () => {
     progressContainer.style.display = 'none';
   }
 
-  // --- Drag and Drop Functions for reordering the list ---
+  // --- Mouse Drag and Drop Functions ---
   function handleDragStart(e) {
     if (e.target.tagName === 'LI') {
       draggingItem = e.target;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', e.target.dataset.index);
-      e.target.classList.add('dragging'); 
+      e.target.classList.add('dragging');
     }
   }
 
@@ -205,6 +249,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // --- Touch Drag and Drop Functions ---
+  function handleTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    const li = touch.target.closest('li');
+    if (!li) return;
+    
+    e.preventDefault();
+    draggingItem = li;
+    touchStartY = touch.clientY;
+    touchStartX = touch.clientX;
+    isTouchDragging = false;
+    
+    li.classList.add('touch-dragging');
+    
+    const btnRemove = li.querySelector('.btn-outline-danger');
+    if (btnRemove) {
+      btnRemove.style.pointerEvents = 'none';
+    }
+  }
+  
+  function handleTouchMove(e) {
+    if (!draggingItem || e.touches.length !== 1) return;
+    
+    e.preventDefault();
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - touchStartY;
+    const deltaX = touch.clientX - touchStartX;
+    
+    if (!isTouchDragging && Math.abs(deltaY) < touchMoveThreshold) return;
+    
+    isTouchDragging = true;
+    
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      draggingItem.style.transform = `translateY(${deltaY}px)`;
+      draggingItem.style.transition = 'none';
+      
+      const touchY = touch.clientY;
+      const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+      const targetLi = elements.find(el => el.tagName === 'LI' && el !== draggingItem);
+      
+      if (targetLi) {
+        document.querySelectorAll('#file-list li').forEach(item => {
+          item.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+        
+        const targetRect = targetLi.getBoundingClientRect();
+        const targetMiddle = targetRect.top + (targetRect.height / 2);
+        
+        if (touchY < targetMiddle) {
+          targetLi.classList.add('drag-over-top');
+        } else {
+          targetLi.classList.add('drag-over-bottom');
+        }
+      }
+    }
+  }
+  
+  function handleTouchEnd(e) {
+    if (!draggingItem) return;
+    
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    const deltaY = touch.clientY - touchStartY;
+    
+    draggingItem.style.transform = '';
+    draggingItem.style.transition = '';
+    draggingItem.classList.remove('touch-dragging');
+    
+    const btnRemove = draggingItem.querySelector('.btn-outline-danger');
+    if (btnRemove) {
+      btnRemove.style.pointerEvents = '';
+    }
+    
+    if (isTouchDragging && Math.abs(deltaY) > touchMoveThreshold) {
+      const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+      const targetLi = elements.find(el => el.tagName === 'LI' && el !== draggingItem);
+      
+      if (targetLi) {
+        const fromIndex = parseInt(draggingItem.dataset.index);
+        let toIndex = parseInt(targetLi.dataset.index);
+        
+        const targetRect = targetLi.getBoundingClientRect();
+        const targetMiddle = targetRect.top + (targetRect.height / 2);
+        
+        if (touch.clientY > targetMiddle) {
+          toIndex++;
+        }
+        
+        if (toIndex > selectedFiles.length) toIndex = selectedFiles.length;
+        if (toIndex < 0) toIndex = 0;
+        
+        const [movedItem] = selectedFiles.splice(fromIndex, 1);
+        selectedFiles.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, movedItem);
+        
+        updateFileList();
+      }
+    }
+    
+    document.querySelectorAll('#file-list li').forEach(item => {
+      item.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    
+    draggingItem = null;
+    isTouchDragging = false;
+  }
+
   // ฟังก์ชันแปลงไฟล์ภาพเป็น PDF
   async function convertToPdf() {
     if (selectedFiles.length === 0) return;
@@ -245,15 +397,14 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // แปลงเป็นขาวดำถ้าต้องการ
         if (isGrayscale) {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
           for (let i = 0; i < data.length; i += 4) {
             const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            data[i] = avg;     // red
-            data[i + 1] = avg; // green
-            data[i + 2] = avg; // blue
+            data[i] = avg;
+            data[i + 1] = avg;
+            data[i + 2] = avg;
           }
           ctx.putImageData(imageData, 0, 0);
         }
@@ -328,28 +479,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const progress = Math.floor((processedFiles / totalFiles) * 100);
         updateProgress(progress, `กำลังแปลงไฟล์ ${processedFiles+1}/${totalFiles}...`);
         
-        // กรณีแปลงเป็น SVG
         if (targetFormat === 'svg') {
           if (file.type === 'image/svg+xml') {
-            // ถ้าไฟล์ต้นทางเป็น SVG อยู่แล้ว
             const svgData = await readFileAsText(file);
             const link = createDownloadLink(new Blob([svgData], { type: 'image/svg+xml' }), 'image/svg+xml', file.name);
             allLinks.push(link);
           } else {
-            // แปลงจากภาพอื่นเป็น SVG
             const svgData = await convertImageToSvg(file);
             const link = createDownloadLink(new Blob([svgData], { type: 'image/svg+xml' }), 'image/svg+xml', file.name.replace(/\.\w+$/, '.svg'));
             allLinks.push(link);
           }
         } 
-        // กรณีแปลงจาก SVG เป็นภาพอื่น
         else if (file.type === 'image/svg+xml') {
           const imageBlob = await convertSvgToImage(file, targetFormat);
           const mimeType = `image/${targetFormat === 'jpg' ? 'jpeg' : targetFormat}`;
           const link = createDownloadLink(imageBlob, mimeType, file.name.replace(/\.svg$/, `.${targetFormat}`));
           allLinks.push(link);
         }
-        // กรณีแปลงภาพปกติเป็นภาพอื่น
         else {
           const imageBlob = await convertImageToFormat(file, targetFormat);
           const mimeType = `image/${targetFormat === 'jpg' ? 'jpeg' : targetFormat}`;
@@ -388,7 +534,6 @@ document.addEventListener('DOMContentLoaded', () => {
       updateProgress(100, 'แปลงไฟล์เสร็จสิ้น!');
       setTimeout(() => hideProgress(), 1000);
 
-      // เพิ่มปุ่มดาวน์โหลดทั้งหมด
       if (allLinks.length > 1) {
         const downloadAllBtn = document.createElement('button');
         downloadAllBtn.textContent = 'ดาวน์โหลดทั้งหมด (.zip)';
@@ -445,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ฟังก์ชันอ่านไฟล์ภาพ
+  // Helper functions
   function readImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -455,7 +600,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ฟังก์ชันอ่านไฟล์เป็นข้อความ (สำหรับ SVG)
   function readFileAsText(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -465,7 +609,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ฟังก์ชันสร้างลิงก์ดาวน์โหลด
   function createDownloadLink(blob, mimeType, fileName) {
     const url = URL.createObjectURL(blob);
     
@@ -478,7 +621,6 @@ document.addEventListener('DOMContentLoaded', () => {
     link.textContent = `ดาวน์โหลด ${fileName}`;
     link.className = 'btn btn-outline-success me-2';
     
-    // เพิ่มตัวอย่างภาพก่อนดาวน์โหลด (สำหรับไฟล์ภาพ)
     if (mimeType.startsWith('image/')) {
         const imgPreview = document.createElement('img');
         imgPreview.src = url;
@@ -499,7 +641,61 @@ document.addEventListener('DOMContentLoaded', () => {
     return wrapper;
   }
 
-  // เริ่มต้นซ่อนปุ่ม convert และ clear all
+  async function convertImageToSvg(file) {
+    // ตัวอย่างง่ายๆ สำหรับการแปลงภาพเป็น SVG
+    const imgData = await readImage(file);
+    const img = new Image();
+    img.src = imgData;
+    await new Promise(res => (img.onload = res));
+    
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${img.width}" height="${img.height}">
+        <image href="${imgData}" width="${img.width}" height="${img.height}"/>
+      </svg>
+    `;
+  }
+
+  async function convertSvgToImage(svgFile, targetFormat) {
+    const svgData = await readFileAsText(svgFile);
+    const img = new Image();
+    const svgUrl = URL.createObjectURL(new Blob([svgData], { type: 'image/svg+xml' }));
+    img.src = svgUrl;
+    await new Promise(res => (img.onload = res));
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(svgUrl);
+        resolve(blob);
+      }, `image/${targetFormat === 'jpg' ? 'jpeg' : targetFormat}`, 0.9);
+    });
+  }
+
+  async function convertImageToFormat(file, targetFormat) {
+    const imgData = await readImage(file);
+    const img = new Image();
+    img.src = imgData;
+    await new Promise(res => (img.onload = res));
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, `image/${targetFormat === 'jpg' ? 'jpeg' : targetFormat}`, 0.9);
+    });
+  }
+
+  // Initialize
   convertBtn.disabled = true;
   convertImageBtn.disabled = true;
   clearAllBtn.disabled = true; 

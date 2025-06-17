@@ -209,4 +209,3 @@ We welcome contributions from everyone! 🎉 If you have ideas for improving thi
 
 This project is licensed under the [MIT License](LICENSE)
 
-```
