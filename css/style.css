@@ -280,3 +280,11 @@ header {
 #pdf-type-select {
   width: 100%;
 }
+
+/* Style for removing item */
+#file-list li.removing-item,
+#result-area .d-flex.align-items-center.mb-2.removing-item {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
