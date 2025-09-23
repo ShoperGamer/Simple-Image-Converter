@@ -3,16 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>เว็บแอปแปลงไฟล์รูปภาพ</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <title>Image Converter</title>
+  <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="icon" href="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:6wpgckx2ajquq5sqwdh4hktm/bafkreihsjdj3qi2pogrbg5qzyseu4e4c6m52ioef5bbqinp7v6wlpjyjxi@jpeg" type="image/x-icon">
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/darkmode.css" />
-  <link rel="stylesheet" href="css/progressbar.css" />
+  <link rel="preconnect" href="bootstrap/Sarabun-Bold.ttf">
+  <link rel="preconnect" href="bootstrap/Sarabun-Bold.ttf" crossorigin>
+  <link href="bootstrap/Sarabun-Bold.ttf:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="bootstrap/logo.webp" type="image/x-icon">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container my-5">
@@ -20,19 +18,19 @@
       <div class="col-lg-8 col-md-10">
         <div class="card shadow-lg border-0">
           <div class="card-header bg-primary text-white text-center">
-            <h1 class="my-3"><i class="bi bi-images me-2"></i>โปรแกรมแปลงไฟล์รูปภาพ</h1>
+            <h1 class="my-3"><i class="bi bi-images me-2"></i>Image Converter</h1>
           </div>
           <div class="card-body p-4 p-md-5">
             <div class="d-flex justify-content-end mb-4">
               <button id="toggle-dark-mode" class="btn btn-outline-secondary">
-                <i class="bi bi-moon-stars-fill me-2"></i><span>โหมดกลางคืน</span>
+                <i class="bi bi-moon-stars-fill me-2"></i><span>DarkMode</span>
               </button>
             </div>
 
             <div id="drop-zone" class="border border-2 border-dashed rounded-3 p-5 text-center bg-light mb-4">
               <i class="bi bi-cloud-arrow-up-fill display-4 text-muted mb-3"></i>
               <p class="mb-1 fw-bold">ลากไฟล์มาวางที่นี่ หรือ คลิกเพื่อเลือกไฟล์</p>
-              <small class="text-muted">รองรับไฟล์: PNG, JPG, WEBP, AVIF, GIF, SVG</small>
+              <small class="text-muted">รองรับไฟล์: PNG, JPG, PDF, WEBP, AVIF, GIF, SVG</small>
             </div>
 
             <div class="d-flex justify-content-end">
@@ -41,7 +39,7 @@
             <ul id="file-list" class="list-group list-group-flush my-4" style="display:none;"></ul>
 
             <div class="mb-4">
-              <label for="format-select" class="form-label fw-bold">เลือกนามสกุลที่ต้องการแปลง:</label>
+              <label for="format-select" class="form-label fw-bold">เลือกนามสกุลที่ต้องการแปลง</label>
               <select id="format-select" class="form-select form-select-lg">
                 <option value="jpg">JPG</option>
                 <option value="png">PNG</option>
@@ -51,17 +49,17 @@
               </select>
             </div>
 
-            <div class="d-grid gap-3">
-              <button id="convert-image-btn" class="btn btn-secondary btn-lg" disabled>
-                <i class="bi bi-arrow-repeat me-2"></i>แปลงภาพเป็นนามสกุลที่เลือก
+            <div class="d-flex justify-content-center gap-3">
+             <button id="convert-image-btn" class="btn btn-secondary btn-lg" disabled>
+             <i class="bi bi-arrow-repeat me-2"></i>แปลงภาพเป็นนามสกุลที่เลือก
               </button>
-              <button id="convert-btn" class="btn btn-primary btn-lg" disabled>
-                <i class="bi bi-file-earmark-pdf-fill me-2"></i>แปลงและรวมเป็น PDF
-              </button>
+            <button id="convert-btn" class="btn btn-primary btn-lg" disabled>
+              <i class="bi bi-file-earmark-pdf-fill me-2"></i>แปลงและรวมเป็น PDF
+            </button>
             </div>
             
-            <div class="mb-4">
-             <label for="pdf-type-select" class="form-label fw-bold">เลือกประเภท PDF:</label>
+            <div class="mb-4 mt-4">
+             <label for="pdf-type-select" class="form-label fw-bold">เลือกประเภท PDF</label>
               <select id="pdf-type-select" class="form-select form-select-lg">
                 <option value="color">สี</option>
                 <option value="grayscale">ขาวดำ</option>
@@ -75,9 +73,9 @@
             </div>
            <div class="progress" style="height: 6px;">
            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
-         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-  </div>
-</div>
+           role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+           </div>
+         </div>
 
             <div id="result-area" class="mt-5 text-center"></div>
           </div>
@@ -86,12 +84,42 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/canvg@4.0.1/dist/canvg.min.js"></script>
-  <script src="https://unpkg.com/imagetracerjs/imagetracer_v1.2.1.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gifuct-js@latest/dist/gifuct.min.js"></script>
+  <!-- Filename Modal -->
+  <div class="modal fade" id="filenameModal" tabindex="-1" aria-labelledby="filenameModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="filenameModalLabel">ตั้งชื่อไฟล์</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="filename-input" class="form-label">ชื่อไฟล์ (ไม่ต้องใส่นามสกุล):</label>
+            <input type="text" class="form-control" id="filename-input" placeholder="ตัวอย่าง: my_images">
+            <div class="form-text">ถ้ามีหลายไฟล์ จะถูกตั้งชื่อเป็น [ชื่อไฟล์] 1, [ชื่อไฟล์] 2, ...</div>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="use-original-name">
+            <label class="form-check-label" for="use-original-name">
+              ใช้ชื่อไฟล์เดิม (ไม่ต้องตั้งชื่อใหม่)
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-primary" id="confirm-filename">ยืนยัน</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script defer src="bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script defer src="bootstrap/js/canvg.min.js"></script>
+  <script defer src="bootstrap/js/imagetracer_v1.2.1.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script defer src="bootstrap/js/gifuct.min.js"></script>
 
   <script>
     // Ensure jsPDF is loaded correctly
@@ -104,9 +132,6 @@
     }
   </script>
  
-  <script src="javascript/index.js"></script>
-  <script src="javascript/pdf-converter.js"></script>
-  <script src="javascript/darkmode.js"></script>
-
+  <script defer src="index.js"></script>
 </body>
 </html>
