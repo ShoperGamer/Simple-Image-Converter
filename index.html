@@ -34,7 +34,7 @@
             </div>
 
             <div class="d-flex justify-content-end">
-            <button id="clear-all-btn" class="btn btn-danger mt-3" disabled>ลบไฟล์ทั้งหมด</button>
+              <button id="clear-all-btn" class="btn btn-danger mt-3" disabled>ลบไฟล์ทั้งหมด</button>
             </div>
             <ul id="file-list" class="list-group list-group-flush my-4" style="display:none;"></ul>
 
@@ -46,37 +46,37 @@
                 <option value="webp">WEBP</option>
                 <option value="avif">AVIF</option>
                 <option value="svg">SVG</option>
+                <option value="perpdf">PDF (แยกไฟล์)</option>
               </select>
             </div>
 
-            <div class="d-flex justify-content-center gap-3">
-             <button id="convert-image-btn" class="btn btn-secondary btn-lg" disabled>
-             <i class="bi bi-arrow-repeat me-2"></i>แปลงภาพเป็นนามสกุลที่เลือก
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+              <button id="convert-image-btn" class="btn btn-secondary btn-lg flex-grow-1" disabled>
+                <i class="bi bi-arrow-repeat me-2"></i>แปลงตามตัวเลือก
               </button>
-            <button id="convert-btn" class="btn btn-primary btn-lg" disabled>
-              <i class="bi bi-file-earmark-pdf-fill me-2"></i>แปลงและรวมเป็น PDF
-            </button>
+              <button id="convert-btn" class="btn btn-primary btn-lg flex-grow-1" disabled>
+                <i class="bi bi-file-earmark-pdf-fill me-2"></i>แปลงและรวมเป็น PDF
+              </button>
             </div>
             
             <div class="mb-4 mt-4">
-             <label for="pdf-type-select" class="form-label fw-bold">เลือกประเภท PDF</label>
+              <label for="pdf-type-select" class="form-label fw-bold">เลือกประเภท PDF</label>
               <select id="pdf-type-select" class="form-select form-select-lg">
                 <option value="color">สี</option>
                 <option value="grayscale">ขาวดำ</option>
-                 </select>
-                 </div>
+              </select>
+            </div>
 
             <div id="progress-container" class="mb-3" style="display: none;">
-            <div class="d-flex justify-content-between mb-1">
-              <small id="progress-text" class="text-muted">กำลังประมวลผล...</small>
-              <small id="progress-percent" class="text-muted">0%</small>
+              <div class="d-flex justify-content-between mb-1">
+                <small id="progress-text" class="text-muted">กำลังประมวลผล...</small>
+                <small id="progress-percent" class="text-muted">0%</small>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
             </div>
-           <div class="progress" style="height: 6px;">
-           <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
-           role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-           </div>
-         </div>
-
             <div id="result-area" class="mt-5 text-center"></div>
           </div>
         </div>
@@ -84,7 +84,6 @@
     </div>
   </div>
 
-  <!-- Filename Modal -->
   <div class="modal fade" id="filenameModal" tabindex="-1" aria-labelledby="filenameModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -95,8 +94,8 @@
         <div class="modal-body">
           <div class="mb-3">
             <label for="filename-input" class="form-label">ชื่อไฟล์ (ไม่ต้องใส่นามสกุล):</label>
-            <input type="text" class="form-control" id="filename-input" placeholder="ตัวอย่าง: my_images">
-            <div class="form-text">ถ้ามีหลายไฟล์ จะถูกตั้งชื่อเป็น [ชื่อไฟล์] 1, [ชื่อไฟล์] 2, ...</div>
+            <input type="text" class="form-control" id="filename-input" placeholder="ตัวอย่าง: my_file">
+            <div class="form-text">ระบบจะรันตัวเลขต่อท้ายให้โดยอัตโนมัติหากมีหลายไฟล์</div>
           </div>
           <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="use-original-name">
@@ -114,24 +113,9 @@
   </div>
 
   <script defer src="bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script defer src="bootstrap/js/canvg.min.js"></script>
-  <script defer src="bootstrap/js/imagetracer_v1.2.1.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script defer src="bootstrap/js/gifuct.min.js"></script>
-
-  <script>
-    // Ensure jsPDF is loaded correctly
-    if (window.jspdf && window.jspdf.jsPDF) {
-      window.jsPDF = window.jspdf.jsPDF;
-    } else if (window.jspdf?.default?.jsPDF) {
-      window.jsPDF = window.jspdf.default.jsPDF;
-    } else {
-      console.error('jsPDF not found in window.jspdf');
-    }
-  </script>
- 
+  <script defer src="js/pdf.min.js"></script>
+  <script defer src="js/jspdf.umd.min.js"></script>
+  <script defer src="js/jszip.min.js"></script>
   <script defer src="index.js"></script>
 </body>
 </html>
