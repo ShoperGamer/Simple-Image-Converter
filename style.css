@@ -1,4 +1,4 @@
-/* Optimized CSS - ลดความซ้ำซ้อนและปรับปรุงประสิทธิภาพ */
+/* Optimized CSS */
 :root {
   --primary-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
   --dark-gradient: linear-gradient(135deg, #3a0ca3 0%, #4361ee 100%);
@@ -16,10 +16,61 @@ body {
   margin: 0;
 }
 
-/* Layout Optimizations */
-.container {
-  will-change: transform;
+/* --- MOVED FROM JS TO CSS FOR PERFORMANCE --- */
+.file-item { 
+  transition: transform 0.2s, box-shadow 0.2s; 
+  cursor: grab; 
+  user-select: none; 
+  touch-action: none; 
+  background: #fff; 
+  margin-bottom: 5px; 
+  border: 1px solid #dee2e6; 
+  border-radius: 4px; 
 }
+.file-item.dragging { 
+  opacity: 0.5; 
+  background: #e9ecef; 
+  border: 2px dashed #0d6efd; 
+}
+.file-item.over { 
+  border-top: 2px solid #0d6efd; 
+}
+.file-thumb { 
+  width: 40px; 
+  height: 40px; 
+  object-fit: cover; 
+  border-radius: 4px; 
+  background: #eee; 
+}
+.preview-container { 
+  max-height: 500px; 
+  overflow-y: auto; 
+  border: 1px solid #dee2e6; 
+  border-radius: 4px; 
+  padding: 10px; 
+  background: #f8f9fa; 
+}
+.preview-image { 
+  max-width: 100%; 
+  height: auto; 
+  display: block; 
+  margin: 0 auto; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+}
+.preview-pdf { 
+  width: 100%; 
+  height: 500px; 
+  border: none; 
+}
+.dark-mode .file-item { 
+  background: #2d3238; 
+  border-color: #495057; 
+  color: #fff; 
+}
+/* ------------------------------------------- */
+
+/* Layout Optimizations */
+.container { will-change: transform; }
 
 .card {
   border-radius: 1rem;
@@ -28,12 +79,10 @@ body {
   overflow: hidden;
   will-change: transform;
 }
-
 .card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-hover);
 }
-
 .card-header {
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
@@ -42,7 +91,7 @@ body {
   font-weight: 600;
 }
 
-/* Drop Zone Optimizations */
+/* Drop Zone */
 #drop-zone {
   cursor: pointer;
   transition: var(--transition), transform 0.2s ease;
@@ -52,7 +101,6 @@ body {
   overflow: hidden;
   contain: layout style paint;
 }
-
 #drop-zone::before {
   content: '';
   position: absolute;
@@ -63,18 +111,14 @@ body {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
   transition: 0.5s;
 }
-
-#drop-zone:hover::before {
-  left: 100%;
-}
-
+#drop-zone:hover::before { left: 100%; }
 #drop-zone.dragover {
   background-color: #e9ecef;
   border-color: #0d6efd !important;
   transform: scale(1.02);
 }
 
-/* Button Optimizations */
+/* Buttons */
 .btn {
   transition: var(--transition);
   font-weight: 500;
@@ -84,7 +128,6 @@ body {
   border: none;
   contain: layout style;
 }
-
 .btn::after {
   content: '';
   position: absolute;
@@ -98,13 +141,38 @@ body {
   transition: transform 0.3s ease;
   z-index: -1;
 }
-
 .btn:hover::after {
   transform: scaleX(1);
   transform-origin: left;
 }
 
-/* List Optimizations */
+.btn-custom-grey {
+  background-color: #9ea7b0;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+.btn-custom-grey:hover:not(:disabled) {
+  background-color: #868e96;
+  color: white;
+}
+
+.btn-custom-blue {
+  background-color: #5a97f2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+.btn-custom-blue:hover:not(:disabled) {
+  background-color: #4a80d4;
+  color: white;
+}
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* List Items */
 .list-group-item {
   background-color: #fff;
   border: 1px solid #dee2e6;
@@ -112,19 +180,17 @@ body {
   transition: var(--transition);
   contain: layout style;
 }
-
 .list-group-item:hover {
   background-color: #f8f9fa;
   transform: translateX(5px);
 }
 
-/* Modal Optimizations */
+/* Modal */
 .modal-content {
   border-radius: 1rem;
   border: none;
   box-shadow: var(--shadow-hover);
 }
-
 .modal-header {
   border-bottom: 1px solid #dee2e6;
   background: var(--primary-gradient);
@@ -132,86 +198,57 @@ body {
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
 }
+.modal-title { font-weight: 600; }
 
-.modal-title {
-  font-weight: 600;
-}
-
-/* Animation Optimizations */
+/* Animation */
 @keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
+.btn-primary { animation: pulse 2s infinite; }
+.btn-primary:hover { animation: none; }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.btn-primary {
-  animation: pulse 2s infinite;
-}
-
-.btn-primary:hover {
-  animation: none;
-}
-
-/* Progress Bar Optimizations */
+/* Progress Bar */
 .progress {
   border-radius: 10px;
   overflow: hidden;
   background-color: #e9ecef;
   contain: layout;
 }
-
 .progress-bar {
   transition: width 0.3s ease;
   will-change: width;
 }
 
-/* Dark Mode Optimizations */
+/* Dark Mode */
 body.dark-mode {
   background-color: #121212;
   color: #e0e0e0;
 }
-
 body.dark-mode .card {
   background-color: #1e1e1e;
   border-color: #333;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
-
-body.dark-mode .card-header {
-  background: var(--dark-gradient) !important;
-}
-
+body.dark-mode .card-header { background: var(--dark-gradient) !important; }
 body.dark-mode .modal-content {
   background-color: #1e1e1e;
   color: #e0e0e0;
 }
-
 body.dark-mode .modal-header {
   background: var(--dark-gradient) !important;
   border-bottom-color: #333;
 }
-
 body.dark-mode .form-control {
   background-color: #2a2a2a;
   color: #e0e0e0;
   border-color: #555;
 }
-
 body.dark-mode .form-control:focus {
   background-color: #333;
   color: #ffffff;
@@ -225,68 +262,35 @@ body.dark-mode .form-control:focus {
   contain: layout style;
 }
 
-/* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
-  .btn-primary {
-    animation: none;
-  }
+  .btn-primary { animation: none; }
 }
 
-/* Mobile Optimizations */
 @media (max-width: 768px) {
-  .card {
-    border-radius: 0.75rem;
-    margin: 0.5rem;
-  }
-  
-  .card-body {
-    padding: 1rem !important;
-  }
-  
-  #drop-zone {
-    padding: 1.5rem !important;
-  }
-  
+  .card { border-radius: 0.75rem; margin: 0.5rem; }
+  .card-body { padding: 1rem !important; }
+  #drop-zone { padding: 1.5rem !important; }
+  .modal-dialog { margin: 0.5rem; }
   .btn-lg {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+    padding: 0.6rem 0.5rem !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  
-  .modal-dialog {
-    margin: 0.5rem;
-  }
+  .btn i { font-size: 0.9rem; }
 }
 
-/* High DPI Display Optimizations */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  .card {
-    border-width: 0.5px;
-  }
-}
-
-/* Print Styles */
 @media print {
-  .btn,
-  #toggle-dark-mode,
-  #drop-zone {
-    display: none !important;
-  }
-  
-  .card {
-    box-shadow: none !important;
-    border: 1px solid #000 !important;
-  }
+  .btn, #toggle-dark-mode, #drop-zone { display: none !important; }
+  .card { box-shadow: none !important; border: 1px solid #000 !important; }
 }
 
-/* Dark Mode Styles (เหลือเฉพาะส่วนที่จำเป็น) */
 body.dark-mode #drop-zone { background-color: #2a2a2a; border-color: #555; color: #ccc; }
 body.dark-mode #drop-zone.dragover { background-color: #333; border-color: #4dabf7 !important; }
 body.dark-mode .list-group-item { background-color: #2c2c2c; color: #e0e0e0; border-color: #444; }
@@ -299,4 +303,3 @@ body.dark-mode .btn-secondary { background-color: #3a3a3a; color: #eee; border-c
 body.dark-mode .btn-outline-secondary { color: #ccc; border-color: #555; }
 body.dark-mode .btn-outline-secondary:hover { background-color: #3a3a3a; color: #fff; }
 body.dark-mode .text-muted { color: #888 !important; }
-
