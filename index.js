@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const supportsOffscreen = typeof OffscreenCanvas !== 'undefined';
   
     function initEventDelegation() {
+      // Load user preference on startup
+      loadUserPreference();
+
       elements.dropZone.addEventListener('click', handleClick);
       elements.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); elements.dropZone.classList.add('dragover'); });
       elements.dropZone.addEventListener('dragleave', () => elements.dropZone.classList.remove('dragover'));
@@ -76,6 +79,34 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.filenameModal.addEventListener('show.bs.modal', () => {
         elements.filenameInput.value = generateDefaultFilename();
       });
+    }
+
+    // --- Local Storage Logic for Preferences ---
+    function loadUserPreference() {
+      try {
+        const stats = JSON.parse(localStorage.getItem('formatUsageStats') || '{}');
+        if (Object.keys(stats).length === 0) return;
+
+        // Find the format with the highest usage count
+        const preferredFormat = Object.keys(stats).reduce((a, b) => stats[a] > stats[b] ? a : b);
+
+        // If the format exists in our dropdown, select it
+        if (elements.formatSelect.querySelector(`option[value="${preferredFormat}"]`)) {
+          elements.formatSelect.value = preferredFormat;
+        }
+      } catch (e) {
+        console.warn('Could not load preferences', e);
+      }
+    }
+
+    function trackUserPreference(format) {
+      try {
+        const stats = JSON.parse(localStorage.getItem('formatUsageStats') || '{}');
+        stats[format] = (stats[format] || 0) + 1;
+        localStorage.setItem('formatUsageStats', JSON.stringify(stats));
+      } catch (e) {
+        console.warn('Could not save preferences', e);
+      }
     }
   
     function getCanvas(width, height) {
@@ -232,6 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasPdf = state.selectedFiles.some(item => item.file.type === 'application/pdf');
       const format = elements.formatSelect.value;
       const isPerPdf = format === 'perpdf';
+
+      // ** Track user preference here **
+      trackUserPreference(format);
 
       // Lazy Load JS
       if (hasPdf || isPerPdf) {

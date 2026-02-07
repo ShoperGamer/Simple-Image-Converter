@@ -1,0 +1,12 @@
+# Simple Image Converter Robots.txt
+# Website: https://simple-image-converter.netlify.app/
+
+User-agent: *
+Allow: /
+
+# ปกป้องโฟลเดอร์เก็บ Library และ Assets (เลือกได้ว่าจะเปิดหรือปิด)
+# การปล่อยให้ Bot เข้าถึง CSS/JS ช่วยให้ Bot เข้าใจการแสดงผลหน้าเว็บได้ดีขึ้น
+Allow: /bootstrap/
+Allow: /js/
+Allow: /style.css
+Allow: /index.js
