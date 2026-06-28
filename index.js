@@ -1,18 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Paths to your local libraries (Lazy Load)
     const LIBS = {
-      pdfjs: 'js/pdf.min.js',
+      pdfjs:     'js/pdf.min.js',
       pdfworker: 'js/pdf.worker.min.js',
-      jspdf: 'js/jspdf.umd.min.js',
-      jszip: 'js/jszip.min.js'
+      jspdf:     'js/jspdf.umd.min.js',
+      jszip:     'js/jszip.min.js'
     };
   
-    // --- Lazy Load Helper ---
     const loadedScripts = {};
     const loadScript = (src) => {
       return new Promise((resolve, reject) => {
-        if (loadedScripts[src]) return resolve(); // Already loaded
+        if (loadedScripts[src]) return resolve();
         const script = document.createElement('script');
         script.src = src;
         script.onload = () => { loadedScripts[src] = true; resolve(); };
@@ -22,41 +20,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   
     const elements = {
-      dropZone: document.getElementById('drop-zone'),
-      fileList: document.getElementById('file-list'),
-      convertBtn: document.getElementById('convert-btn'),
-      convertImageBtn: document.getElementById('convert-image-btn'),
-      formatSelect: document.getElementById('format-select'),
-      resultArea: document.getElementById('result-area'),
-      clearAllBtn: document.getElementById('clear-all-btn'),
+      dropZone:          document.getElementById('drop-zone'),
+      fileList:          document.getElementById('file-list'),
+      fileListHeader:    document.getElementById('file-list-header'),
+      fileCount:         document.getElementById('file-count'),
+      convertBtn:        document.getElementById('convert-btn'),
+      convertImageBtn:   document.getElementById('convert-image-btn'),
+      formatSelect:      document.getElementById('format-select'),
+      resultArea:        document.getElementById('result-area'),
+      clearAllBtn:       document.getElementById('clear-all-btn'),
       progressContainer: document.getElementById('progress-container'),
-      progressBar: document.getElementById('progress-bar'),
-      progressText: document.getElementById('progress-text'),
-      progressPercent: document.getElementById('progress-percent'),
-      pdfTypeSelect: document.getElementById('pdf-type-select'),
-      filenameModal: document.getElementById('filenameModal'),
-      filenameInput: document.getElementById('filename-input'),
-      useOriginalName: document.getElementById('use-original-name'),
-      confirmFilename: document.getElementById('confirm-filename')
+      progressBar:       document.getElementById('progress-bar'),
+      progressText:      document.getElementById('progress-text'),
+      progressPercent:   document.getElementById('progress-percent'),
+      pdfTypeSelect:     document.getElementById('pdf-type-select'),
+      filenameModal:     document.getElementById('filenameModal'),
+      filenameInput:     document.getElementById('filename-input'),
+      useOriginalName:   document.getElementById('use-original-name'),
+      confirmFilename:   document.getElementById('confirm-filename')
     };
   
     const state = {
-      selectedFiles: [], 
+      selectedFiles: [],
       isProcessing: false,
       conversionResults: null,
       conversionType: null,
       dragStartIndex: null
     };
   
-    const MAX_IMAGE_DIMENSION = 1600; 
-    const JPEG_QUALITY = 0.70;        
-    const WEBP_QUALITY = 0.50;        
+    const MAX_IMAGE_DIMENSION = 1600;
+    const JPEG_QUALITY = 0.70;
+    const WEBP_QUALITY = 0.50;
     const isLowSpec = (navigator.hardwareConcurrency || 4) <= 4;
     const PDF_SCALE = isLowSpec ? 1.0 : 1.5;
     const supportsOffscreen = typeof OffscreenCanvas !== 'undefined';
   
     function initEventDelegation() {
-      // Load user preference on startup
       loadUserPreference();
 
       elements.dropZone.addEventListener('click', handleClick);
@@ -81,16 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // --- Local Storage Logic for Preferences ---
     function loadUserPreference() {
       try {
         const stats = JSON.parse(localStorage.getItem('formatUsageStats') || '{}');
         if (Object.keys(stats).length === 0) return;
-
-        // Find the format with the highest usage count
         const preferredFormat = Object.keys(stats).reduce((a, b) => stats[a] > stats[b] ? a : b);
-
-        // If the format exists in our dropdown, select it
         if (elements.formatSelect.querySelector(`option[value="${preferredFormat}"]`)) {
           elements.formatSelect.value = preferredFormat;
         }
@@ -140,56 +134,50 @@ document.addEventListener('DOMContentLoaded', () => {
       return { canvas, width, height };
     }
   
-    // --- Async Thumbnail Generation (Lazy loads PDF lib) ---
     async function generateThumbnail(file) {
       try {
         if (file.type.startsWith('image/')) {
           return URL.createObjectURL(file);
         } else if (file.type === 'application/pdf') {
-            // Lazy load PDF.js only when needed
-            if (typeof pdfjsLib === 'undefined') {
-                await loadScript(LIBS.pdfjs);
-                pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker;
-            }
-
-            const buffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-            const page = await pdf.getPage(1);
-            const viewport = page.getViewport({ scale: 0.5 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-            return canvas.toDataURL();
+          if (typeof pdfjsLib === 'undefined') {
+            await loadScript(LIBS.pdfjs);
+            pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker;
+          }
+          const buffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 0.5 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+          return canvas.toDataURL();
         }
       } catch (e) {
         console.warn('Thumbnail failed', e);
-        return null; 
+        return null;
       }
       return null;
     }
   
-    // --- Main: Convert TO PDF ---
     async function convertToPdf() {
       if (state.selectedFiles.length === 0 || state.isProcessing) return;
       
-      // Lazy Load Libraries
       elements.convertBtn.disabled = true;
       elements.resultArea.innerHTML = '<div class="text-muted mb-3"><div class="spinner-border spinner-border-sm me-2"></div>กำลังโหลดส่วนเสริม...</div>';
       
       try {
-          // Load dependencies concurrently
-          await Promise.all([
-              loadScript(LIBS.jspdf),
-              (state.selectedFiles.some(f => f.type === 'application/pdf') && typeof pdfjsLib === 'undefined') 
-                ? loadScript(LIBS.pdfjs).then(() => { pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker; }) 
-                : Promise.resolve()
-          ]);
+        await Promise.all([
+          loadScript(LIBS.jspdf),
+          (state.selectedFiles.some(f => f.type === 'application/pdf') && typeof pdfjsLib === 'undefined')
+            ? loadScript(LIBS.pdfjs).then(() => { pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker; })
+            : Promise.resolve()
+        ]);
       } catch(e) {
-          elements.resultArea.innerHTML = `<div class="text-danger">Failed to load libraries: ${e.message}</div>`;
-          elements.convertBtn.disabled = false;
-          return;
+        elements.resultArea.innerHTML = `<div class="text-danger">Failed to load libraries: ${e.message}</div>`;
+        elements.convertBtn.disabled = false;
+        return;
       }
 
       showProgress();
@@ -199,19 +187,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const { jsPDF } = window.jspdf;
         const isGrayscale = elements.pdfTypeSelect.value === 'grayscale';
         const doc = new jsPDF('p', 'mm', 'a4');
-        
         const files = state.selectedFiles.map(item => item.file);
-          
         if (!files.length) throw new Error('ไม่พบไฟล์ที่รองรับ');
   
+        let totalUnits = 0;
+        const pdfDocs = [];
+        for (const file of files) {
+          if (file.type === 'application/pdf') {
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+            totalUnits += pdf.numPages;
+            pdfDocs.push({ file, pdf });
+          } else {
+            totalUnits += 1;
+            pdfDocs.push({ file, pdf: null });
+          }
+        }
+
+        let currentUnit = 0;
         for (let i = 0; i < files.length; i++) {
           await new Promise(r => setTimeout(r, 0));
-          updateProgress(Math.floor((i / files.length) * 100), `รวมไฟล์ ${i+1}/${files.length}...`);
-  
-          if (files[i].type === 'application/pdf') {
-            await processPdfToMerged(files[i], doc, isGrayscale, i > 0);
+          const item = pdfDocs[i];
+
+          if (item.pdf) {
+            await processPdfToMerged(item.file, doc, isGrayscale, i > 0, item.pdf, () => {
+              currentUnit++;
+              const percent = Math.floor((currentUnit / totalUnits) * 100);
+              updateProgress(percent, `รวมไฟล์ PDF ${i+1}/${files.length} (หน้าที่ ${currentUnit}/${totalUnits})...`);
+            });
           } else {
-            await processImageToMerged(files[i], doc, isGrayscale, i > 0);
+            await processImageToMerged(item.file, doc, isGrayscale, i > 0);
+            currentUnit++;
+            const percent = Math.floor((currentUnit / totalUnits) * 100);
+            updateProgress(percent, `รวมรูปภาพ ${i+1}/${files.length} (${percent}%)...`);
           }
         }
   
@@ -232,13 +240,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const blob = await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
       const imgData = new Uint8Array(await blob.arrayBuffer());
       addImageToPdfPage(doc, { width, height }, imgData, addPage);
-      canvas.width = 0; 
+      canvas.width = 0;
     }
   
-    async function processPdfToMerged(file, doc, isGrayscale, startNewPage) {
-      const buffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  
+    async function processPdfToMerged(file, doc, isGrayscale, startNewPage, pdf, onPageProcessed) {
       for (let j = 1; j <= pdf.numPages; j++) {
         const page = await pdf.getPage(j);
         const viewport = page.getViewport({ scale: PDF_SCALE });
@@ -248,14 +253,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isGrayscale) applyGrayscale(ctx, viewport.width, viewport.height);
         const blob = await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
         const imgData = new Uint8Array(await blob.arrayBuffer());
-        
         const shouldAdd = (j === 1) ? startNewPage : true;
         addImageToPdfPage(doc, { width: viewport.width, height: viewport.height }, imgData, shouldAdd);
         canvas.width = 0;
+        if (onPageProcessed) onPageProcessed();
       }
     }
   
-    // --- Main: Convert TO Image ---
     async function convertImages() {
       if (state.selectedFiles.length === 0 || state.isProcessing) return;
       
@@ -264,22 +268,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const format = elements.formatSelect.value;
       const isPerPdf = format === 'perpdf';
 
-      // ** Track user preference here **
       trackUserPreference(format);
 
-      // Lazy Load JS
       if (hasPdf || isPerPdf) {
-         elements.resultArea.innerHTML = '<div class="text-muted mb-3"><div class="spinner-border spinner-border-sm me-2"></div>กำลังโหลดส่วนเสริม...</div>';
-         try {
-             const proms = [];
-             if (hasPdf && typeof pdfjsLib === 'undefined') proms.push(loadScript(LIBS.pdfjs).then(() => { pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker; }));
-             if (isPerPdf && typeof window.jspdf === 'undefined') proms.push(loadScript(LIBS.jspdf));
-             await Promise.all(proms);
-         } catch(e) {
-            elements.resultArea.innerHTML = `<div class="text-danger">Failed load libs: ${e.message}</div>`;
-            elements.convertImageBtn.disabled = false;
-            return;
-         }
+        elements.resultArea.innerHTML = '<div class="text-muted mb-3"><div class="spinner-border spinner-border-sm me-2"></div>กำลังโหลดส่วนเสริม...</div>';
+        try {
+          const proms = [];
+          if (hasPdf && typeof pdfjsLib === 'undefined') proms.push(loadScript(LIBS.pdfjs).then(() => { pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker; }));
+          if (isPerPdf && typeof window.jspdf === 'undefined') proms.push(loadScript(LIBS.jspdf));
+          await Promise.all(proms);
+        } catch(e) {
+          elements.resultArea.innerHTML = `<div class="text-danger">Failed load libs: ${e.message}</div>`;
+          elements.convertImageBtn.disabled = false;
+          return;
+        }
       }
 
       showProgress();
@@ -287,38 +289,57 @@ document.addEventListener('DOMContentLoaded', () => {
       
       try {
         const results = [];
-        const total = state.selectedFiles.length;
+        const totalFiles = state.selectedFiles.length;
         
-        for (let i = 0; i < total; i++) {
-          await new Promise(r => setTimeout(r, 0));
-          updateProgress(Math.floor((i / total) * 100), `แปลงไฟล์ ${i+1}/${total}...`);
-          
-          const file = state.selectedFiles[i].file;
-          
-          // Handle PDF Input Separately
+        let totalUnits = 0;
+        const fileInfos = [];
+        for (const item of state.selectedFiles) {
+          const file = item.file;
           if (file.type === 'application/pdf') {
-             const pdfResults = await processPdfInputForConversion(file, format, isPerPdf);
-             results.push(...pdfResults);
-          } 
-          // Handle Image Input
-          else {
-              let blob, ext = format;
-              if (isPerPdf) {
-                blob = await convertImageToPdfBlob(file);
-                ext = 'pdf';
-              } else if (format === 'svg' && file.type !== 'image/svg+xml') {
-                 blob = new Blob([await convertImageToSvg(file)], { type: 'image/svg+xml' });
-              } else if (format === 'svg') {
-                 blob = file;
-              } else {
-                 blob = await convertImageFormat(file, format);
-              }
-              results.push({ 
-                  blob, 
-                  originalName: file.name, 
-                  extension: ext, 
-                  type: ext === 'pdf' ? 'application/pdf' : `image/${ext}` 
-              });
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+            totalUnits += pdf.numPages;
+            fileInfos.push({ file, pdf });
+          } else {
+            totalUnits += 1;
+            fileInfos.push({ file, pdf: null });
+          }
+        }
+
+        let currentUnit = 0;
+        for (let i = 0; i < totalFiles; i++) {
+          await new Promise(r => setTimeout(r, 0));
+          const info = fileInfos[i];
+          
+          if (info.pdf) {
+            const pdfResults = await processPdfInputForConversion(info.file, format, isPerPdf, info.pdf, () => {
+              currentUnit++;
+              const percent = Math.floor((currentUnit / totalUnits) * 100);
+              updateProgress(percent, `แปลงไฟล์ PDF ${i+1}/${totalFiles} (${percent}%)...`);
+            });
+            results.push(...pdfResults);
+          } else {
+            const file = info.file;
+            let blob, ext = format;
+            if (isPerPdf) {
+              blob = await convertImageToPdfBlob(file);
+              ext = 'pdf';
+            } else if (format === 'svg' && file.type !== 'image/svg+xml') {
+              blob = new Blob([await convertImageToSvg(file)], { type: 'image/svg+xml' });
+            } else if (format === 'svg') {
+              blob = file;
+            } else {
+              blob = await convertImageFormat(file, format);
+            }
+            results.push({
+              blob,
+              originalName: file.name,
+              extension: ext,
+              type: ext === 'pdf' ? 'application/pdf' : `image/${ext}`
+            });
+            currentUnit++;
+            const percent = Math.floor((currentUnit / totalUnits) * 100);
+            updateProgress(percent, `แปลงรูปภาพ ${i+1}/${totalFiles} (${percent}%)...`);
           }
         }
         
@@ -333,39 +354,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   
-    // Helper: Handle PDF Input for Image Conversion
-    async function processPdfInputForConversion(file, format, isPerPdf) {
-        const buffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-        const results = [];
+    async function processPdfInputForConversion(file, format, isPerPdf, pdf, onPageProcessed) {
+      const results = [];
+      
+      for (let j = 1; j <= pdf.numPages; j++) {
+        const page = await pdf.getPage(j);
+        const viewport = page.getViewport({ scale: PDF_SCALE });
+        const canvas = getCanvas(viewport.width, viewport.height);
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
         
-        for (let j = 1; j <= pdf.numPages; j++) {
-            const page = await pdf.getPage(j);
-            const viewport = page.getViewport({ scale: PDF_SCALE });
-            const canvas = getCanvas(viewport.width, viewport.height);
-            const ctx = canvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport }).promise;
-            
-            let blob, ext, mime;
-            if (isPerPdf) {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF(viewport.width > viewport.height ? 'l' : 'p', 'mm', 'a4');
-                const imgBlob = await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
-                const imgData = new Uint8Array(await imgBlob.arrayBuffer());
-                addImageToPdfPage(doc, { width: viewport.width, height: viewport.height }, imgData, false);
-                blob = doc.output('blob');
-                ext = 'pdf';
-                mime = 'application/pdf';
-            } else {
-                ext = format;
-                mime = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-                const quality = format === 'webp' ? WEBP_QUALITY : JPEG_QUALITY;
-                blob = await canvasToBlob(canvas, mime, quality);
-            }
-            results.push({ blob, originalName: `${file.name}_page${j}`, extension: ext, type: mime });
-            canvas.width = 0; 
+        let blob, ext, mime;
+        if (isPerPdf) {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF(viewport.width > viewport.height ? 'l' : 'p', 'mm', 'a4');
+          const imgBlob = await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
+          const imgData = new Uint8Array(await imgBlob.arrayBuffer());
+          addImageToPdfPage(doc, { width: viewport.width, height: viewport.height }, imgData, false);
+          blob = doc.output('blob');
+          ext = 'pdf';
+          mime = 'application/pdf';
+        } else {
+          ext = format;
+          mime = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+          const quality = format === 'webp' ? WEBP_QUALITY : JPEG_QUALITY;
+          blob = await canvasToBlob(canvas, mime, quality);
         }
-        return results;
+        results.push({ blob, originalName: `${file.name}_page${j}`, extension: ext, type: mime });
+        canvas.width = 0;
+        if (onPageProcessed) onPageProcessed();
+      }
+      return results;
     }
   
     async function convertImageFormat(file, format) {
@@ -383,7 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const { canvas, width, height } = await processImageToCanvas(data);
       const blob = await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
       const imgData = new Uint8Array(await blob.arrayBuffer());
-      
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF(width > height ? 'l' : 'p', 'mm', 'a4');
       addImageToPdfPage(doc, { width, height }, imgData, false);
@@ -393,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
     function addImageToPdfPage(doc, imgDim, imgData, addPage) {
       if (addPage) doc.addPage('a4', imgDim.width > imgDim.height ? 'l' : 'p');
-      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageWidth  = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const ratio = Math.min(pageWidth / imgDim.width, pageHeight / imgDim.height);
       const w = imgDim.width * ratio;
@@ -430,93 +448,90 @@ document.addEventListener('DOMContentLoaded', () => {
       const validFiles = Array.from(files).filter(f => !state.selectedFiles.some(s => s.file.name === f.name && s.file.size === f.size));
       
       if (validFiles.length) {
-          const newItems = await Promise.all(validFiles.map(async (f) => {
-              const thumb = await generateThumbnail(f);
-              return {
-                  file: f,
-                  id: 'file-' + Math.random().toString(36).substr(2, 9),
-                  thumbnail: thumb
-              };
-          }));
-          
-          state.selectedFiles.push(...newItems);
-          updateFileList();
-          updateButtonStates();
+        const newItems = await Promise.all(validFiles.map(async (f) => {
+          const thumb = await generateThumbnail(f);
+          return { file: f, id: 'file-' + Math.random().toString(36).substr(2, 9), thumbnail: thumb };
+        }));
+        state.selectedFiles.push(...newItems);
+        updateFileList();
+        updateButtonStates();
       }
     }
   
     const readImage = f => new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); });
-    const convertImageToSvg = async f => `<svg xmlns="http://www.w3.org/2000/svg"><image href="${await readImage(f)}"/></svg>`;
+    
+    const convertImageToSvg = async f => {
+      const data = await readImage(f);
+      const img = new Image();
+      img.src = data;
+      await img.decode();
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${img.width} ${img.height}" width="${img.width}" height="${img.height}"><image href="${data}" width="${img.width}" height="${img.height}"/></svg>`;
+    };
     
     function updateFileList() {
-      if (!state.selectedFiles.length) { elements.fileList.style.display = 'none'; return; }
+      const has = state.selectedFiles.length > 0;
+
+      if (elements.fileListHeader) {
+        elements.fileListHeader.style.display = has ? 'flex' : 'none';
+      }
+      if (elements.fileCount) {
+        elements.fileCount.textContent = has ? `${state.selectedFiles.length} ไฟล์` : '';
+      }
+
+      if (!has) { elements.fileList.style.display = 'none'; return; }
       elements.fileList.style.display = 'block';
-      elements.fileList.innerHTML = ''; 
+      elements.fileList.innerHTML = '';
   
       state.selectedFiles.forEach((item, i) => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item d-flex justify-content-between align-items-center file-item';
-          li.draggable = true;
-          li.dataset.index = i;
-          li.dataset.id = item.id;
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center file-item';
+        li.draggable = true;
+        li.dataset.index = i;
+        li.dataset.id = item.id;
   
-          const thumbHtml = item.thumbnail 
-            ? `<img src="${item.thumbnail}" class="file-thumb me-3">` 
-            : `<div class="file-thumb me-3 d-flex align-items-center justify-content-center text-muted border"><small>${item.file.name.split('.').pop()}</small></div>`;
+        const thumbHtml = item.thumbnail
+          ? `<img src="${item.thumbnail}" class="file-thumb me-3">`
+          : `<div class="file-thumb me-3 d-flex align-items-center justify-content-center text-muted border"><small>${item.file.name.split('.').pop()}</small></div>`;
   
-          li.innerHTML = `
-            <div class="d-flex align-items-center overflow-hidden" style="width: 80%;">
-                <span class="text-muted me-2" style="cursor: move;">☰</span>
-                ${thumbHtml}
-                <span class="text-truncate small">${item.file.name}</span>
-            </div>
-            <button class="btn btn-sm btn-outline-danger py-0 delete-btn">×</button>
-          `;
+        li.innerHTML = `
+          <div class="d-flex align-items-center overflow-hidden flex-grow-1" style="min-width: 0; margin-right: 0.75rem;">
+            <span class="text-muted me-2" style="cursor: move; flex-shrink: 0;">☰</span>
+            ${thumbHtml}
+            <span class="text-truncate small flex-grow-1" style="min-width: 0;">${item.file.name}</span>
+          </div>
+          <button class="btn btn-sm btn-outline-danger py-0 delete-btn" style="flex-shrink: 0;">×</button>
+        `;
   
-          addDragEvents(li);
-          
-          li.querySelector('.delete-btn').addEventListener('click', (e) => {
-              e.stopPropagation();
-              removeFile(i);
-          });
-  
-          elements.fileList.appendChild(li);
+        addDragEvents(li);
+        li.querySelector('.delete-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeFile(i);
+        });
+        elements.fileList.appendChild(li);
       });
     }
   
-    // --- Drag and Drop Logic ---
     function addDragEvents(li) {
       li.addEventListener('dragstart', handleDragStart);
       li.addEventListener('dragenter', handleDragEnter);
       li.addEventListener('dragover', handleDragOver);
       li.addEventListener('drop', handleDropSort);
       li.addEventListener('dragend', handleDragEnd);
-      li.addEventListener('touchstart', handleTouchStart, {passive: false});
-      li.addEventListener('touchmove', handleTouchMove, {passive: false});
+      li.addEventListener('touchstart', handleTouchStart, { passive: false });
+      li.addEventListener('touchmove', handleTouchMove, { passive: false });
       li.addEventListener('touchend', handleTouchEnd);
     }
   
     let dragSrcEl = null;
-    function handleDragStart(e) {
-      dragSrcEl = this;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/html', this.outerHTML);
-      this.classList.add('dragging');
-      state.dragStartIndex = Number(this.dataset.index);
-    }
-    function handleDragEnter(e) { e.preventDefault(); }
-    function handleDragOver(e) {
-      if (e.preventDefault) e.preventDefault(); 
-      e.dataTransfer.dropEffect = 'move';
-      return false;
-    }
+    function handleDragStart(e)  { dragSrcEl = this; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/html', this.outerHTML); this.classList.add('dragging'); state.dragStartIndex = Number(this.dataset.index); }
+    function handleDragEnter(e)  { e.preventDefault(); }
+    function handleDragOver(e)   { if (e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
     function handleDropSort(e) {
-      e.stopPropagation();
-      e.preventDefault();
+      e.stopPropagation(); e.preventDefault();
       const targetLi = e.target.closest('li');
       if (dragSrcEl !== targetLi && targetLi) {
         const fromIndex = Number(dragSrcEl.dataset.index);
-        const toIndex = Number(targetLi.dataset.index);
+        const toIndex   = Number(targetLi.dataset.index);
         const itemMoved = state.selectedFiles[fromIndex];
         state.selectedFiles.splice(fromIndex, 1);
         state.selectedFiles.splice(toIndex, 0, itemMoved);
@@ -524,29 +539,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return false;
     }
-    function handleDragEnd() {
-      this.classList.remove('dragging');
-      dragSrcEl = null;
-    }
+    function handleDragEnd() { this.classList.remove('dragging'); dragSrcEl = null; }
   
     let touchEl = null;
-    function handleTouchStart(e) { if(e.target.closest('.delete-btn')) return; touchEl = this; touchEl.classList.add('dragging'); }
-    function handleTouchMove(e) { if (!touchEl) return; e.preventDefault(); }
+    function handleTouchStart(e) { if (e.target.closest('.delete-btn')) return; touchEl = this; touchEl.classList.add('dragging'); }
+    function handleTouchMove(e)  { if (!touchEl) return; e.preventDefault(); }
     function handleTouchEnd(e) {
-        if (!touchEl) return;
-        touchEl.classList.remove('dragging');
-        const changedTouch = e.changedTouches[0];
-        const targetElement = document.elementFromPoint(changedTouch.clientX, changedTouch.clientY);
-        const targetLi = targetElement ? targetElement.closest('li') : null;
-        if (targetLi && targetLi !== touchEl && elements.fileList.contains(targetLi)) {
-             const fromIndex = Number(touchEl.dataset.index);
-             const toIndex = Number(targetLi.dataset.index);
-             const itemMoved = state.selectedFiles[fromIndex];
-             state.selectedFiles.splice(fromIndex, 1);
-             state.selectedFiles.splice(toIndex, 0, itemMoved);
-             updateFileList();
-        }
-        touchEl = null;
+      if (!touchEl) return;
+      touchEl.classList.remove('dragging');
+      const changedTouch = e.changedTouches[0];
+      const targetElement = document.elementFromPoint(changedTouch.clientX, changedTouch.clientY);
+      const targetLi = targetElement ? targetElement.closest('li') : null;
+      if (targetLi && targetLi !== touchEl && elements.fileList.contains(targetLi)) {
+        const fromIndex = Number(touchEl.dataset.index);
+        const toIndex   = Number(targetLi.dataset.index);
+        const itemMoved = state.selectedFiles[fromIndex];
+        state.selectedFiles.splice(fromIndex, 1);
+        state.selectedFiles.splice(toIndex, 0, itemMoved);
+        updateFileList();
+      }
+      touchEl = null;
     }
   
     window.removeFile = i => { state.selectedFiles.splice(i, 1); updateFileList(); updateButtonStates(); };
@@ -559,29 +571,29 @@ document.addEventListener('DOMContentLoaded', () => {
       previewContainer.className = 'preview-container mb-3';
       
       const links = items.map((item, i) => {
-        const ext = item.extension || 'pdf';
-        const name = keepName ? item.originalName.replace(/\.\w+$/, `.${ext}`) : 
-                     (items.length > 1 ? `${custom} ${i+1}.${ext}` : `${custom}.${ext}`);
-        const url = URL.createObjectURL(item.blob);
+        const ext  = item.extension || 'pdf';
+        const name = keepName
+          ? item.originalName.replace(/\.\w+$/, `.${ext}`)
+          : (items.length > 1 ? `${custom} ${i+1}.${ext}` : `${custom}.${ext}`);
+        const url  = URL.createObjectURL(item.blob);
         
         const wrapper = document.createElement('div');
         wrapper.className = 'mb-4 border-bottom pb-2';
         wrapper.innerHTML = `<h6 class="small text-muted mb-2">ตัวอย่าง: ${name}</h6>`;
         
         if (item.blob.type.startsWith('image/')) {
-            const img = document.createElement('img');
-            img.src = url;
-            img.className = 'preview-image';
-            wrapper.appendChild(img);
+          const img = document.createElement('img');
+          img.src = url;
+          img.className = 'preview-image';
+          wrapper.appendChild(img);
         } else if (item.blob.type === 'application/pdf') {
-            const embed = document.createElement('embed');
-            embed.src = url + '#toolbar=0&navpanes=0&scrollbar=0';
-            embed.type = 'application/pdf';
-            embed.className = 'preview-pdf';
-            wrapper.appendChild(embed);
+          const embed = document.createElement('embed');
+          embed.src = url + '#toolbar=0&navpanes=0&scrollbar=0';
+          embed.type = 'application/pdf';
+          embed.className = 'preview-pdf';
+          wrapper.appendChild(embed);
         }
         previewContainer.appendChild(wrapper);
-  
         return { url, name };
       });
   
@@ -600,15 +612,14 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = 'โหลดทั้งหมด (ZIP)';
         btn.onclick = async () => {
           if (!window.JSZip) {
-              // Lazy Load JSZip
-              elements.resultArea.innerHTML = '<div class="text-muted mb-3"><div class="spinner-border spinner-border-sm me-2"></div>Loading ZIP library...</div>';
-              await loadScript(LIBS.jszip);
-              displayConversionResults(res, keepName, custom); // Redraw
-              return;
+            elements.resultArea.innerHTML = '<div class="text-muted mb-3"><div class="spinner-border spinner-border-sm me-2"></div>Loading ZIP library...</div>';
+            await loadScript(LIBS.jszip);
+            displayConversionResults(res, keepName, custom);
+            return;
           }
           const zip = new JSZip();
           links.forEach(l => zip.file(l.name, fetch(l.url).then(r => r.blob())));
-          const c = await zip.generateAsync({type:'blob'});
+          const c = await zip.generateAsync({ type: 'blob' });
           const a = document.createElement('a');
           a.href = URL.createObjectURL(c);
           a.download = `${custom}.zip`;
@@ -633,8 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function hideProgress() { elements.progressContainer.style.display = 'none'; state.isProcessing = false; updateButtonStates(); }
     function handleDrop(e) { e.preventDefault(); elements.dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); }
     function toggleDarkMode() { document.body.classList.toggle('dark-mode'); localStorage.setItem('darkMode', document.body.classList.contains('dark-mode') ? 'enabled' : 'disabled'); }
+
     if (localStorage.getItem('darkMode') === 'enabled') toggleDarkMode();
-    // Worker source is now set dynamically when pdfjs loads
-  
     initEventDelegation();
-  });
+});
